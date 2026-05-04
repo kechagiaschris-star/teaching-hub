@@ -689,12 +689,28 @@ async function loadAll() {
   } catch(e) { setSyncing('error'); }
 }
 
-async function insertLesson(d) { setSyncing('sync'); const {data,error}=await sb.from('lessons').insert(d).select(); setSyncing(error?'error':'ok'); if(!error){lessons.unshift(data[0]);renderAll();} }
+async function insertLesson(d) {
+  setSyncing('sync');
+  const {data,error} = await sb.from('lessons').insert(d).select();
+  setSyncing(error?'error':'ok');
+  if(!error && data){ lessons.unshift(data[0]); }
+  return !error;
+}
 async function updateLesson(id,d) { setSyncing('sync'); const {error}=await sb.from('lessons').update(d).eq('id',id); if(!error){const i=lessons.findIndex(l=>l.id===id);if(i>-1)lessons[i]={...lessons[i],...d};setSyncing('ok');renderAll();} else setSyncing('error'); }
 async function deleteLesson(id) { if(!confirm('Διαγραφή;'))return; setSyncing('sync'); await sb.from('lessons').delete().eq('id',id); lessons=lessons.filter(l=>l.id!==id); setSyncing('ok'); renderAll(); }
-async function insertSchedule(d) { setSyncing('sync'); const {data,error}=await sb.from('schedule').insert(d).select(); setSyncing(error?'error':'ok'); if(!error){schedule.push(data[0]);renderAll();} }
+async function insertSchedule(d) {
+  setSyncing('sync');
+  const {data,error} = await sb.from('schedule').insert(d).select();
+  setSyncing(error?'error':'ok');
+  if(!error && data){ schedule.push(data[0]); }
+  return !error;
+}
 async function deleteSchedule(id) { if(!confirm('Διαγραφή ώρας;'))return; await sb.from('schedule').delete().eq('id',id); schedule=schedule.filter(s=>s.id!==id); renderSchedule(); }
-async function insertHW(d) { const {data,error}=await sb.from('homework').insert(d).select(); if(!error){homework.unshift(data[0]);renderHomework();updateHWDot();} }
+async function insertHW(d) {
+  const {data,error} = await sb.from('homework').insert(d).select();
+  if(!error && data){ homework.unshift(data[0]); }
+  return !error;
+}
 async function toggleHWDone(id) { const h=homework.find(x=>x.id===id); if(!h)return; const v=!h.done; await sb.from('homework').update({done:v}).eq('id',id); h.done=v; renderHomework(); updateHWDot(); }
 async function deleteHW(id) { await sb.from('homework').delete().eq('id',id); homework=homework.filter(h=>h.id!==id); renderHomework(); updateHWDot(); }
 async function markPaid(id) { await updateLesson(id,{payment:'paid'}); }
@@ -816,7 +832,7 @@ async function saveLesson(){
   const d={student,date,subject:document.getElementById('f-subject').value,topic:document.getElementById('f-topic').value.trim(),duration:parseInt(document.getElementById('f-duration').value)||0,fee:parseFloat(document.getElementById('f-fee').value)||0,payment:document.getElementById('f-payment').value,type:document.getElementById('f-type').value,notes:document.getElementById('f-notes').value.trim()};
   closeLessonModal();
   if(editId) await updateLesson(editId,d);
-  else await insertLesson(d);
+  else { await insertLesson(d); renderAll(); }
 }
 
 // ===================== SCHEDULE =====================
@@ -832,10 +848,25 @@ function openScheduleModal(){
 }
 function closeScheduleModal(){ document.getElementById('modal-schedule').classList.remove('open'); }
 async function saveScheduleSlot(){
-  const student=document.getElementById('sc-student').value.trim(); if(!student){alert('Συμπλήρωσε μαθητή.');return;}
+  const student = document.getElementById('sc-student').value.trim();
+  if(!student){ alert('Συμπλήρωσε μαθητή.'); return; }
+  const slot = {
+    student,
+    day:        parseInt(document.getElementById('sc-day').value),
+    start_time: document.getElementById('sc-start').value,
+    duration:   parseInt(document.getElementById('sc-duration').value)||60,
+    subject:    document.getElementById('sc-subject').value,
+    fee:        parseFloat(document.getElementById('sc-fee').value)||0,
+    type:       document.getElementById('sc-type').value
+  };
   closeScheduleModal();
-  await insertSchedule({student,day:parseInt(document.getElementById('sc-day').value),start_time:document.getElementById('sc-start').value,duration:parseInt(document.getElementById('sc-duration').value)||60,subject:document.getElementById('sc-subject').value,fee:parseFloat(document.getElementById('sc-fee').value)||0,type:document.getElementById('sc-type').value});
-  renderSchedule();
+  const ok = await insertSchedule(slot);
+  if(ok){
+    renderSchedule();
+    renderOverview();
+  } else {
+    alert('Σφάλμα αποθήκευσης. Έλεγξε τη σύνδεση Supabase.');
+  }
 }
 function renderSchedule(){
   const v=document.getElementById('schedule-view'); if(!v)return;
@@ -877,6 +908,7 @@ async function finalizeCheckin(){
   }
   localStorage.setItem('ck_ci_'+today,'done');
   document.getElementById('modal-checkin').classList.remove('open');
+  renderAll();
   alert('Έλεγχος ολοκληρώθηκε!');
 }
 
@@ -887,7 +919,9 @@ function toggleHWType(){document.getElementById('hw-stu-grp').style.display=docu
 async function saveHW(){
   const desc=document.getElementById('hw-desc').value.trim(); if(!desc){alert('Συμπλήρωσε περιγραφή.');return;}
   await insertHW({type:document.getElementById('hw-type').value,student:document.getElementById('hw-student').value.trim(),description:desc,priority:document.getElementById('hw-priority').value,deadline:document.getElementById('hw-deadline').value,done:false});
-  closeHWModal(); document.getElementById('hw-desc').value=''; document.getElementById('hw-student').value='';
+  closeHWModal();
+  document.getElementById('hw-desc').value=''; document.getElementById('hw-student').value='';
+  renderHomework(); updateHWDot();
 }
 function updateHWDot(){const n=homework.filter(h=>!h.done).length;const d=document.getElementById('hw-dot');if(d)d.style.display=n>0?'inline-block':'none';}
 function renderHomework(){
@@ -982,7 +1016,7 @@ function showParsedVoice(d){
   document.getElementById('voice-parsed').innerHTML=`<div style="background:#f0f8ea;border:1px solid #a7f3d0;border-radius:8px;padding:10px;font-size:13px;margin-bottom:8px;"><div style="font-weight:600;color:var(--green);margin-bottom:6px;">✓ Αναγνωρίστηκε:</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div>👤 <strong>${d.student||'—'}</strong></div><div>📅 ${d.date}</div><div>📚 ${d.subject||'—'}${d.topic?' · '+d.topic:''}</div><div>⏱ ${d.duration||0}λεπτά · €${d.fee||0}</div><div>${d.payment==='paid'?'✅ Πλ/θηκε':'❌ Ανεξόφλητο'}</div><div>${d.type==='class'?'🏫 Φροντ.':'👤 Ιδιαίτερο'}</div>${d.notes?'<div style="grid-column:1/-1;color:#555;">📝 '+d.notes+'</div>':''}</div></div>`;
   document.getElementById('voice-confirm').style.display='block';
 }
-async function confirmVoice(){if(!parsedVoice)return;closeVoice();await insertLesson(parsedVoice);parsedVoice=null;qTranscript='';}
+async function confirmVoice(){if(!parsedVoice)return;closeVoice();await insertLesson(parsedVoice);parsedVoice=null;qTranscript='';renderAll();}
 
 // voice in fields
 let fieldRecog=null;
