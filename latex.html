@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LaTeX Converter — Κεχαγιάς</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a18;min-height:100vh;}
+.app{max-width:1100px;margin:0 auto;padding:1.5rem;}
+h1{font-size:20px;font-weight:600;margin-bottom:4px;}
+.subtitle{font-size:13px;color:#888;margin-bottom:1.5rem;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.card{background:#fff;border-radius:12px;padding:1.25rem;border:1px solid #eae8e2;}
+.section-title{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+.btn{padding:8px 18px;font-size:13px;font-weight:500;border-radius:8px;cursor:pointer;border:1px solid #ddd;background:#fff;color:#1a1a18;transition:all .15s;}
+.btn:hover{background:#f5f4f0;}
+.btn.primary{background:#1a1a18;color:#fff;border-color:transparent;}
+.btn.primary:hover{background:#333;}
+.btn.sm{padding:5px 12px;font-size:12px;}
+.btn.success{background:#e8f3de;color:#2d6a0f;border-color:#c3e0a0;}
+select,input[type=text]{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;}
+textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;}
+.input-area{height:320px;}
+.output-area{height:320px;font-family:'Courier New',monospace;font-size:12px;background:#1e1e1e;color:#d4d4d4;border-color:#444;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group label{font-size:12px;color:#666;font-weight:500;}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge.info{background:#e6f1fb;color:#185fa5;}
+.badge.success{background:#e8f3de;color:#2d6a0f;}
+.dot-pulse{display:flex;gap:4px;align-items:center;}
+.dot-pulse span{width:6px;height:6px;border-radius:50%;background:#ccc;animation:pulse 1.2s infinite;}
+.dot-pulse span:nth-child(2){animation-delay:.2s;}
+.dot-pulse span:nth-child(3){animation-delay:.4s;}
+@keyframes pulse{0%,80%,100%{opacity:.3}40%{opacity:1}}
+.status-bar{font-size:12px;color:#666;margin-top:8px;min-height:20px;}
+.copy-btn{position:absolute;top:8px;right:8px;}
+.output-wrap{position:relative;}
+pre{white-space:pre-wrap;word-break:break-word;}
+.tab-row{display:flex;gap:2px;background:#e8e6e0;border-radius:8px;padding:3px;margin-bottom:1rem;}
+.tab{flex:1;padding:6px 8px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;border-radius:6px;color:#666;}
+.tab.active{background:#fff;color:#1a1a18;box-shadow:0 1px 2px rgba(0,0,0,.1);}
+.panel{display:none;}
+.panel.active{display:block;}
+.template-card{border:1px solid #eae8e2;border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
+.template-card:hover,.template-card.selected{border-color:#185fa5;background:#f0f6ff;}
+.template-card h3{font-size:13px;font-weight:600;margin-bottom:4px;}
+.template-card p{font-size:12px;color:#888;}
+.hint{font-size:12px;color:#666;background:#f5f4f0;border-radius:8px;padding:10px 12px;margin-bottom:12px;line-height:1.6;}
+.shortcut{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#f0f6ff;border:1px solid #c0d8f8;border-radius:6px;font-size:12px;color:#185fa5;cursor:pointer;margin:2px;}
+.shortcut:hover{background:#dbeafe;}
+@media(max-width:700px){.grid{grid-template-columns:1fr;}.form-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:1.5rem;">
+    <div>
+      <h1>LaTeX Converter — Β΄ Λυκείου</h1>
+      <div class="subtitle">Χρήστος Κεχαγιάς · Μετατροπή κειμένου/Word σε LaTeX με τα δικά σου templates</div>
+    </div>
+    <span class="badge info">AI-Powered</span>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab active" onclick="switchTab('convert')">Μετατροπή κειμένου</button>
+    <button class="tab" onclick="switchTab('templates')">Templates & Κώδικας</button>
+    <button class="tab" onclick="switchTab('guide')">Οδηγός χρήσης</button>
+  </div>
+
+  <!-- CONVERT TAB -->
+  <div class="panel active" id="tab-convert">
+    <div class="form-row" style="margin-bottom:12px;">
+      <div class="form-group">
+        <label>Τύπος εγγράφου</label>
+        <select id="doc-type">
+          <option value="theory">Θεωρία / Σημειώσεις</option>
+          <option value="exam">Διαγώνισμα</option>
+          <option value="worksheet">Φυλλάδιο εξάσκησης</option>
+          <option value="solutions">Λύσεις διαγωνίσματος</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Μάθημα</label>
+        <select id="subject">
+          <option>Άλγεβρα</option>
+          <option>Γεωμετρία</option>
+          <option>Ανάλυση</option>
+          <option>Στατιστική</option>
+          <option>Πιθανότητες</option>
+          <option>Διαφορικός Λογισμός</option>
+          <option>Γενικά Μαθηματικά</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="hint">
+      💡 <strong>Πώς λειτουργεί:</strong> Επικόλλησε κείμενο από Word, PDF ή χειρόγραφο κείμενο. 
+      Γράφε τους τύπους απλά: <code>sin^2x + cos^2x = 1</code> ή <code>x^2 - 3x + 2 = 0</code> — το AI τα μετατρέπει αυτόματα σε LaTeX.
+      Μπορείς επίσης να γράψεις σε ελεύθερη μορφή τι θέλεις να δημιουργήσεις.
+    </div>
+
+    <div style="margin-bottom:10px;">
+      <div style="font-size:12px;color:#666;margin-bottom:5px;">Γρήγορες εντολές:</div>
+      <button class="shortcut" onclick="setPrompt('exam_thema_d')">Θέμα Δ από κείμενο</button>
+      <button class="shortcut" onclick="setPrompt('theory_section')">Ενότητα θεωρίας</button>
+      <button class="shortcut" onclick="setPrompt('worksheet_topic')">Φυλλάδιο από θέμα</button>
+      <button class="shortcut" onclick="setPrompt('solutions_full')">Λύσεις βήμα-βήμα</button>
+      <button class="shortcut" onclick="setPrompt('convert_plain')">Μετατροπή απλού κειμένου</button>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="section-title">Εισαγωγή κειμένου</div>
+        <textarea class="input-area" id="input-text" placeholder="Επικόλλησε εδώ το κείμενό σου από Word/PDF...
+
+Παράδειγμα:
+Θέμα Δ
+Αν sinα + cosα = 1/√2, να βρεθεί:
+α) το sinα · cosα
+β) το sin³α + cos³α
+
+Ή περίγραψε τι θέλεις:
+'Φτιάξε ένα φυλλάδιο εξάσκησης για τριγωνομετρικές εξισώσεις Β Λυκείου με 6 ασκήσεις κλιμακωτής δυσκολίας'"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap;gap:6px;">
+          <div style="font-size:12px;color:#aaa;" id="char-count">0 χαρακτήρες</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn sm" onclick="clearInput()">Καθαρισμός</button>
+            <button class="btn primary" onclick="convertToLatex()" id="convert-btn">Μετατροπή σε LaTeX →</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">LaTeX Έξοδος</div>
+        <div class="output-wrap">
+          <textarea class="output-area" id="output-text" readonly placeholder="Ο LaTeX κώδικας θα εμφανιστεί εδώ..."></textarea>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap;gap:6px;">
+          <div class="status-bar" id="status-bar">Έτοιμο για μετατροπή</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn sm" onclick="copyOutput()" id="copy-btn">📋 Αντιγραφή</button>
+            <button class="btn sm success" onclick="downloadTex()" id="dl-btn">⬇ Κατέβασε .tex</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Extra options -->
+    <div class="card" style="margin-top:1rem;">
+      <div class="section-title">Επιπλέον οδηγίες (προαιρετικό)</div>
+      <textarea id="extra-instructions" style="height:56px;" placeholder="π.χ. 'Πρόσθεσε παγίδα-προσοχή στο τέλος' / 'Βάλε 3 βήματα στη λύση' / 'Χρησιμοποίησε multicol για τις ασκήσεις'"></textarea>
+    </div>
+  </div>
+
+  <!-- TEMPLATES TAB -->
+  <div class="panel" id="tab-templates">
+    <div class="grid">
+      <div>
+        <div class="section-title" style="margin-bottom:10px;">Επίλεξε template για προβολή</div>
+        <div class="template-card selected" id="tc-theory" onclick="showTemplate('theory')">
+          <h3>📘 Θεωρία / Σημειώσεις</h3>
+          <p>Ορισμοί, θεωρήματα, παραδείγματα, σύνοψη. Περιβάλλοντα: definition, theorem, property, example, warning.</p>
+        </div>
+        <div class="template-card" id="tc-exam" onclick="showTemplate('exam')">
+          <h3>📝 Διαγώνισμα</h3>
+          <p>Θέμα Α–Δ με μοριοδότηση, πλαίσιο μαθητή, βαθμολόγιο. Αυτόματο Α, Β, Γ, Δ counter.</p>
+        </div>
+        <div class="template-card" id="tc-worksheet" onclick="showTemplate('worksheet')">
+          <h3>📄 Φυλλάδιο εξάσκησης</h3>
+          <p>Ενότητες με κλιμακωτή δυσκολία, multicol layout, δείκτες ⬤/⬤⬤/⬤⬤⬤.</p>
+        </div>
+        <div class="template-card" id="tc-solutions" onclick="showTemplate('solutions')">
+          <h3>✅ Λύσεις διαγωνίσματος</h3>
+          <p>Αναλυτικές λύσεις με βήματα, μοριοδότηση ανά βήμα, παρατηρήσεις.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div class="section-title" style="margin-bottom:0;" id="template-name">theory_template.tex</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn sm" onclick="copyTemplate()">📋 Αντιγραφή</button>
+            <button class="btn sm success" onclick="downloadTemplate()">⬇ .tex</button>
+          </div>
+        </div>
+        <textarea id="template-view" style="height:420px;font-family:'Courier New',monospace;font-size:11px;background:#1e1e1e;color:#d4d4d4;border-color:#444;" readonly></textarea>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem;">
+      <div class="section-title">Παλέτα χρωμάτων & περιβαλλόντων</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;">
+        <span style="background:#dbeafe;color:#1e40af;padding:4px 10px;border-radius:6px;">definition — μπλε</span>
+        <span style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:6px;">theorem — πράσινο</span>
+        <span style="background:#ffedd5;color:#9a3412;padding:4px 10px;border-radius:6px;">property — πορτοκαλί</span>
+        <span style="background:#f3f4f6;color:#374151;padding:4px 10px;border-radius:6px;">remark — γκρι</span>
+        <span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:6px;">warning — κόκκινο</span>
+        <span style="background:#dbeafe;color:#1e3a8a;padding:4px 10px;border-radius:6px;">formula — σκούρο μπλε</span>
+        <span style="background:#dcfce7;color:#14532d;padding:4px 10px;border-radius:6px;">result — πράσινο φόντο</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- GUIDE TAB -->
+  <div class="panel" id="tab-guide">
+    <div class="grid">
+      <div class="card">
+        <div class="section-title">Βήμα-βήμα χρήση</div>
+        <ol style="font-size:13px;line-height:2;padding-left:1.2rem;">
+          <li>Επίλεξε <strong>τύπο εγγράφου</strong> και <strong>μάθημα</strong></li>
+          <li>Επικόλλησε κείμενο από Word/PDF <strong>ή</strong> περίγραψε τι θέλεις</li>
+          <li>Πρόσθεσε επιπλέον οδηγίες αν χρειάζεται</li>
+          <li>Πάτα <strong>Μετατροπή σε LaTeX</strong></li>
+          <li>Κατέβασε το <code>.tex</code> αρχείο</li>
+          <li>Άνοιξε σε <strong>Overleaf</strong> ή τοπικό LaTeX</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Γρήγορη σύνταξη μαθηματικών</div>
+        <div style="font-family:monospace;font-size:12px;line-height:2;">
+          <div><code>$x^2 + 1$</code> → inline τύπος</div>
+          <div><code>\[ ... \]</code> → centered τύπος</div>
+          <div><code>\frac{a}{b}</code> → κλάσμα</div>
+          <div><code>\sqrt{x}</code> → ρίζα</div>
+          <div><code>\sin, \cos, \tan</code> → τριγ. συν.</div>
+          <div><code>\alpha, \beta, \theta</code> → ελληνικά</div>
+          <div><code>\leq, \geq, \neq</code> → σύμβολα</div>
+          <div><code>\in, \mathbb{R}</code> → σύνολα</div>
+          <div><code>^{\circ}</code> → μοίρες (°)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem;">
+      <div class="section-title">Overleaf — Setup (μια φορά)</div>
+      <div style="font-size:13px;line-height:1.9;color:#444;">
+        <strong>1.</strong> Πήγαινε στο <a href="https://overleaf.com" target="_blank" style="color:#185fa5;">overleaf.com</a> → Δωρεάν λογαριασμός<br>
+        <strong>2.</strong> New Project → Blank Project<br>
+        <strong>3.</strong> Αντικατέστησε το <code>main.tex</code> με το template<br>
+        <strong>4.</strong> Menu (πάνω αριστερά) → Compiler → <strong>XeLaTeX</strong> (για ελληνικά)<br>
+        <strong>5.</strong> Πάτα <strong>Recompile</strong> → PDF έτοιμο<br><br>
+        <strong>💡 Tip:</strong> Χρησιμοποίησε <strong>XeLaTeX</strong> για καλύτερη υποστήριξη ελληνικών. Αν χρησιμοποιείς pdflatex, σιγουρέψου ότι έχεις το <code>babel</code> με <code>greek</code>.
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem;">
+      <div class="section-title">Τοπική εγκατάσταση</div>
+      <div style="font-size:13px;line-height:1.9;color:#444;">
+        <strong>Windows:</strong> MiKTeX + TeXstudio (δωρεάν)<br>
+        <strong>Mac:</strong> MacTeX + TeXShop<br>
+        <strong>Linux:</strong> <code>sudo apt install texlive-full texstudio</code><br><br>
+        <strong>Compile:</strong> <code>xelatex myfile.tex</code> ή <code>pdflatex myfile.tex</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== TEMPLATES ====================
+const TEMPLATES = {
+  theory: { name: 'theory_template.tex', content: `% ΘΕΩΡΙΑ — Β ΛΥΚΕΙΟΥ — Χρήστος Κεχαγιάς
+% Αλλαξε τις μεταβλητές στην ενότητα ΜΕΤΑΒΛΗΤΕΣ ΕΓΓΡΑΦΟΥ
+% Compile: pdflatex ή xelatex
+
+\\documentclass[12pt,a4paper]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[greek,english]{babel}
+\\usepackage[T1]{fontenc}
+\\usepackage{lmodern}
+\\usepackage{amsmath, amssymb, amsthm}
+\\usepackage{geometry}
+\\usepackage{xcolor}
+\\usepackage{tcolorbox}
+\\usepackage{fancyhdr}
+\\usepackage{titlesec}
+\\tcbuselibrary{theorems, skins, breakable}
+
+\\geometry{a4paper,top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm,headheight=15pt}
+
+\\definecolor{mainblue}{RGB}{26,82,160}
+\\definecolor{lightblue}{RGB}{219,234,254}
+\\definecolor{darkblue}{RGB}{15,52,110}
+\\definecolor{accentgreen}{RGB}{22,101,52}
+\\definecolor{lightgreen}{RGB}{220,252,231}
+\\definecolor{accentred}{RGB}{153,27,27}
+\\definecolor{lightred}{RGB}{254,226,226}
+\\definecolor{lightorange}{RGB}{255,237,213}
+\\definecolor{accentorange}{RGB}{146,64,14}
+\\definecolor{gray90}{RGB}{240,240,240}
+\\definecolor{gray50}{RGB}{107,114,128}
+
+% --- ΜΕΤΑΒΛΗΤΕΣ ΕΓΓΡΑΦΟΥ ---
+\\newcommand{\\MATHEMAsubject}{Άλγεβρα}
+\\newcommand{\\MATHEMAtopic}{Τίτλος Ενότητας}
+\\newcommand{\\MATHEMAchapter}{Κεφάλαιο X}
+\\newcommand{\\MATHEMAdate}{\\today}
+
+\\pagestyle{fancy}
+\\fancyhf{}
+\\fancyhead[L]{\\small\\textcolor{gray50}{\\textbf{Β΄ ΛΥΚΕΙΟΥ} — \\textsc{Μαθηματικά}}}
+\\fancyhead[R]{\\small\\textcolor{gray50}{\\MATHEMAsubject}}
+\\fancyfoot[C]{\\small\\textcolor{gray50}{\\thepage}}
+\\fancyfoot[R]{\\small\\textcolor{gray50}{Χρήστος Κεχαγιάς}}
+\\renewcommand{\\headrulewidth}{0.4pt}
+
+\\titleformat{\\section}{\\large\\bfseries\\color{mainblue}}{\\thesection.}{0.5em}{}[\\titlerule]
+\\titleformat{\\subsection}{\\normalsize\\bfseries\\color{darkblue}}{\\thesubsection.}{0.5em}{}
+
+\\newtcolorbox{definition}[1][]{enhanced,breakable,colback=lightblue,colframe=mainblue,fonttitle=\\bfseries\\small,title={Ορισμός\\ #1},arc=4pt}
+\\newtcolorbox{theorem}[1][]{enhanced,breakable,colback=lightgreen,colframe=accentgreen,fonttitle=\\bfseries\\small,title={Θεώρημα\\ #1},arc=4pt}
+\\newtcolorbox{property}[1][]{enhanced,breakable,colback=lightorange,colframe=accentorange,fonttitle=\\bfseries\\small,title={Ιδιότητα\\ #1},arc=4pt}
+\\newtcolorbox{remark}{enhanced,breakable,colback=gray90,colframe=gray50,fonttitle=\\bfseries\\small,title={Παρατήρηση},arc=4pt}
+\\newtcolorbox{warning}{enhanced,colback=lightred,colframe=accentred,fonttitle=\\bfseries\\small,title={⚠ Προσοχή},arc=4pt}
+\\newtcolorbox{example}[1][]{enhanced,breakable,colback=white,colframe=mainblue,fonttitle=\\bfseries\\small\\color{mainblue},title={Παράδειγμα\\ #1},borderline west={2pt}{0pt}{mainblue},left=8pt,arc=0pt,boxrule=0pt,frame hidden}
+\\newtcolorbox{formula}[1][]{enhanced,colback=lightblue,colframe=darkblue,fonttitle=\\bfseries\\small,title={#1},halign=center,arc=4pt}
+\\newenvironment{solution}{\\par\\smallskip\\textcolor{accentgreen}{\\textbf{Λύση:}}\\par\\smallskip}{}
+
+\\begin{document}
+
+\\begin{center}
+  {\\LARGE\\bfseries\\color{mainblue} \\MATHEMAchapter}\\\\[6pt]
+  {\\Large\\bfseries \\MATHEMAtopic}\\\\[4pt]
+  {\\large\\color{gray50} Β΄ Λυκείου — \\MATHEMAsubject}\\\\[2pt]
+  {\\small\\color{gray50} \\MATHEMAdate}
+\\end{center}
+\\vspace{0.5cm}\\hrule height 1.5pt\\vspace{0.8cm}
+
+\\section{Ορισμοί}
+
+\\begin{definition}[— Τίτλος]
+  Κείμενο ορισμού...
+\\end{definition}
+
+\\section{Θεωρήματα}
+
+\\begin{theorem}[Τίτλος]
+  \\[ τύπος \\]
+\\end{theorem}
+
+\\section{Παραδείγματα}
+
+\\begin{example}[1]
+  Εκφώνηση...
+  \\begin{solution}
+    Λύση βήμα-βήμα...
+  \\end{solution}
+\\end{example}
+
+\\begin{warning}
+  Συνηθισμένα λάθη...
+\\end{warning}
+
+\\end{document}` },
+
+  exam: { name: 'exam_template.tex', content: `% ΔΙΑΓΩΝΙΣΜΑ — Β ΛΥΚΕΙΟΥ — Χρήστος Κεχαγιάς
+
+\\documentclass[12pt,a4paper]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[greek,english]{babel}
+\\usepackage[T1]{fontenc}
+\\usepackage{lmodern}
+\\usepackage{amsmath,amssymb}
+\\usepackage{geometry}
+\\usepackage{xcolor}
+\\usepackage{tcolorbox}
+\\usepackage{enumitem}
+\\usepackage{fancyhdr}
+\\tcbuselibrary{skins}
+
+\\geometry{a4paper,top=2cm,bottom=2cm,left=2.5cm,right=2.5cm,headheight=15pt}
+\\definecolor{mainblue}{RGB}{26,82,160}
+\\definecolor{darkblue}{RGB}{15,52,110}
+\\definecolor{lightblue}{RGB}{219,234,254}
+\\definecolor{gray90}{RGB}{240,240,240}
+\\definecolor{gray50}{RGB}{107,114,128}
+
+% --- ΜΕΤΑΒΛΗΤΕΣ ---
+\\newcommand{\\EXAMsubject}{Άλγεβρα}
+\\newcommand{\\EXAMtopic}{Κεφάλαιο X — Τίτλος}
+\\newcommand{\\EXAMclass}{Β΄ Λυκείου}
+\\newcommand{\\EXAMdate}{Μήνας 2025}
+\\newcommand{\\EXAMduration}{2 ώρες}
+
+\\pagestyle{fancy}
+\\fancyhf{}
+\\fancyhead[L]{\\small\\textbf{\\EXAMclass} — \\EXAMsubject}
+\\fancyhead[R]{\\small\\EXAMdate}
+\\fancyfoot[C]{\\small\\thepage}
+\\renewcommand{\\headrulewidth}{0.4pt}
+
+\\newcounter{themacounter}
+\\newcommand{\\thema}[2]{%
+  \\stepcounter{themacounter}%
+  \\vspace{0.5cm}
+  \\begin{tcolorbox}[enhanced,colback=lightblue,colframe=mainblue,leftrule=4pt,arc=3pt,fonttitle=\\bfseries,title={\\large ΘΕΜΑ \\Alph{themacounter} \\hfill \\normalsize\\textcolor{mainblue}{(#1 μονάδες)}}]
+  #2
+  \\end{tcolorbox}
+}
+\\newcounter{questioncounter}[themacounter]
+\\newcommand{\\question}[2]{\\stepcounter{questioncounter}\\par\\vspace{4pt}\\noindent\\textbf{\\alph{questioncounter})} \\, #1 \\hfill\\textcolor{gray50}{\\small(#2 μον.)}\\par}
+\\newcommand{\\answerspace}[1]{\\vspace{#1}}
+
+\\begin{document}
+
+\\noindent
+\\begin{tcolorbox}[enhanced,colback=mainblue,colframe=darkblue,arc=5pt,top=10pt,bottom=10pt]
+\\begin{center}
+  \\textcolor{white}{\\textbf{\\Large ΔΙΑΓΩΝΙΣΜΑ \\EXAMsubject}}\\\\[4pt]
+  \\textcolor{white}{\\large \\EXAMtopic}\\\\[2pt]
+  \\textcolor{white}{\\EXAMclass \\quad · \\quad \\EXAMdate \\quad · \\quad Διάρκεια: \\EXAMduration}
+\\end{center}
+\\end{tcolorbox}
+
+\\vspace{6pt}
+\\noindent
+\\begin{tcolorbox}[colback=gray90,colframe=gray50,arc=3pt,top=6pt,bottom=6pt]
+\\begin{tabular}{p{7cm} p{5cm} p{3cm}}
+  \\textbf{Ονοματεπώνυμο:} \\dotfill & \\textbf{Τμήμα:} \\dotfill & \\textbf{Βαθμός:} \\dotfill
+\\end{tabular}
+\\end{tcolorbox}
+
+\\thema{25}{
+  \\question{Πρώτη ερώτηση Θέματος Α...}{15}
+  \\answerspace{3cm}
+  \\question{Δεύτερη ερώτηση...}{10}
+  \\answerspace{3cm}
+}
+
+\\thema{25}{
+  \\question{Εκφώνηση Θέματος Β...}{25}
+  \\answerspace{7cm}
+}
+
+\\thema{25}{
+  \\question{Εκφώνηση Θέματος Γ...}{25}
+  \\answerspace{7cm}
+}
+
+\\thema{25}{
+  \\question{Εκφώνηση Θέματος Δ...}{25}
+  \\answerspace{8cm}
+}
+
+\\end{document}` },
+
+  worksheet: { name: 'worksheet_template.tex', content: `% ΦΥΛΛΑΔΙΟ ΕΞΑΣΚΗΣΗΣ — Β ΛΥΚΕΙΟΥ — Χρήστος Κεχαγιάς
+
+\\documentclass[11pt,a4paper]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[greek,english]{babel}
+\\usepackage[T1]{fontenc}
+\\usepackage{lmodern}
+\\usepackage{amsmath,amssymb}
+\\usepackage{geometry}
+\\usepackage{xcolor}
+\\usepackage{tcolorbox}
+\\usepackage{enumitem}
+\\usepackage{multicol}
+\\usepackage{fancyhdr}
+\\tcbuselibrary{skins,breakable}
+
+\\geometry{a4paper,top=2cm,bottom=2.2cm,left=2cm,right=2cm,headheight=15pt}
+\\definecolor{mainblue}{RGB}{26,82,160}
+\\definecolor{darkblue}{RGB}{15,52,110}
+\\definecolor{lightblue}{RGB}{219,234,254}
+\\definecolor{accentgreen}{RGB}{22,101,52}
+\\definecolor{lightgreen}{RGB}{220,252,231}
+\\definecolor{lightorange}{RGB}{255,237,213}
+\\definecolor{accentorange}{RGB}{146,64,14}
+\\definecolor{gray90}{RGB}{240,240,240}
+\\definecolor{gray50}{RGB}{107,114,128}
+
+% --- ΜΕΤΑΒΛΗΤΕΣ ---
+\\newcommand{\\WSsubject}{Άλγεβρα}
+\\newcommand{\\WStopic}{Θέμα — Τίτλος}
+\\newcommand{\\WSclass}{Β΄ Λυκείου}
+\\newcommand{\\WSdate}{\\today}
+\\newcommand{\\WSfocus}{Περιγραφή στόχου}
+
+\\pagestyle{fancy}
+\\fancyhf{}
+\\fancyhead[L]{\\small\\textbf{Φυλλάδιο Εξάσκησης} — \\WSclass\\ · \\WSsubject}
+\\fancyhead[R]{\\small\\WSdate}
+\\fancyfoot[C]{\\small\\thepage}
+\\renewcommand{\\headrulewidth}{0.4pt}
+
+\\newcommand{\\easy}{\\textcolor{accentgreen}{\\textbf{[⬤ Βασική]}}}
+\\newcommand{\\medium}{\\textcolor{accentorange}{\\textbf{[⬤⬤ Μέτρια]}}}
+\\newcommand{\\hard}{\\textcolor{accentred}{\\textbf{[⬤⬤⬤ Προχωρημένη]}}}
+
+\\newcounter{exnum}
+\\newcommand{\\ex}[2][]{\\stepcounter{exnum}\\vspace{6pt}\\noindent\\textbf{Άσκηση \\theexnum.}\\ #2\\ \\ifx&#1&\\else\\; #1\\fi\\par}
+\\newcommand{\\ws}[1]{\\vspace{#1}}
+
+\\begin{document}
+
+\\begin{tcolorbox}[enhanced,colback=mainblue,colframe=darkblue,arc=5pt,top=8pt,bottom=8pt]
+\\begin{center}
+  \\textcolor{white}{\\textbf{\\large \\WStopic}}\\\\[3pt]
+  \\textcolor{white}{\\WSclass \\quad · \\quad \\WSsubject \\quad · \\quad \\WSdate}\\\\[2pt]
+  \\textcolor{white}{\\small\\textit{\\WSfocus}}
+\\end{center}
+\\end{tcolorbox}
+
+\\vspace{0.3cm}
+
+\\begin{tcolorbox}[colback=gray90,colframe=gray50,arc=3pt,top=3pt,bottom=3pt]
+  \\textbf{Ενότητα 1 — Βασικές Ασκήσεις}
+\\end{tcolorbox}
+
+\\begin{multicols}{2}
+\\ex[\\easy]{Εκφώνηση άσκησης 1...}
+\\ws{3.5cm}
+
+\\ex[\\medium]{Εκφώνηση άσκησης 2...}
+\\ws{3.5cm}
+\\end{multicols}
+
+\\begin{tcolorbox}[colback=lightblue,colframe=mainblue,arc=3pt,top=3pt,bottom=3pt]
+  \\textbf{Ενότητα 2 — Προχωρημένες Ασκήσεις}
+\\end{tcolorbox}
+
+\\ex[\\hard]{Εκφώνηση δύσκολης άσκησης...}
+\\ws{7cm}
+
+\\end{document}` },
+
+  solutions: { name: 'solutions_template.tex', content: `% ΛΥΣΕΙΣ ΔΙΑΓΩΝΙΣΜΑΤΟΣ — Β ΛΥΚΕΙΟΥ — Χρήστος Κεχαγιάς
+
+\\documentclass[11pt,a4paper]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[greek,english]{babel}
+\\usepackage[T1]{fontenc}
+\\usepackage{lmodern}
+\\usepackage{amsmath,amssymb}
+\\usepackage{geometry}
+\\usepackage{xcolor}
+\\usepackage{tcolorbox}
+\\usepackage{enumitem}
+\\usepackage{fancyhdr}
+\\tcbuselibrary{skins,breakable}
+
+\\geometry{a4paper,top=2cm,bottom=2.2cm,left=2.5cm,right=2.5cm,headheight=15pt}
+\\definecolor{mainblue}{RGB}{26,82,160}
+\\definecolor{darkblue}{RGB}{15,52,110}
+\\definecolor{lightblue}{RGB}{219,234,254}
+\\definecolor{accentgreen}{RGB}{22,101,52}
+\\definecolor{lightgreen}{RGB}{220,252,231}
+\\definecolor{lightorange}{RGB}{255,237,213}
+\\definecolor{accentorange}{RGB}{146,64,14}
+\\definecolor{gray90}{RGB}{240,240,240}
+\\definecolor{gray50}{RGB}{107,114,128}
+
+% --- ΜΕΤΑΒΛΗΤΕΣ ---
+\\newcommand{\\SOLsubject}{Άλγεβρα}
+\\newcommand{\\SOLtopic}{Τίτλος}
+\\newcommand{\\SOLclass}{Β΄ Λυκείου}
+\\newcommand{\\SOLdate}{Μήνας 2025}
+
+\\pagestyle{fancy}
+\\fancyhf{}
+\\fancyhead[L]{\\small\\textbf{ΛΥΣΕΙΣ} — \\SOLclass\\ · \\SOLsubject\\ · \\SOLtopic}
+\\fancyhead[R]{\\small\\SOLdate}
+\\fancyfoot[C]{\\small\\thepage}
+\\renewcommand{\\headrulewidth}{0.4pt}
+
+\\newcounter{solthema}
+\\newcommand{\\solthema}[2]{\\stepcounter{solthema}\\vspace{0.5cm}\\begin{tcolorbox}[enhanced,colback=mainblue,colframe=darkblue,arc=4pt,top=5pt,bottom=5pt,left=8pt]\\textcolor{white}{\\large\\textbf{ΘΕΜΑ \\Alph{solthema}}} \\hfill \\textcolor{white}{\\small(#1 μονάδες)}\\\\\\textcolor{lightblue}{\\small #2}\\end{tcolorbox}}
+
+\\newcounter{solq}[solthema]
+\\newcommand{\\solq}[2]{\\stepcounter{solq}\\vspace{6pt}\\noindent\\begin{tcolorbox}[colback=gray90,colframe=gray50,arc=3pt,top=3pt,bottom=3pt,left=5pt,right=5pt]\\textbf{\\alph{solq})} \\; \\small\\textit{#1} \\hfill \\textcolor{gray50}{\\small(#2 μον.)}\\end{tcolorbox}}
+
+\\newcommand{\\step}[2][]{\\par\\vspace{4pt}\\noindent\\begin{tcolorbox}[enhanced,colback=white,colframe=mainblue,borderline west={2pt}{0pt}{mainblue},arc=0pt,boxrule=0pt,frame hidden,left=8pt,right=4pt,top=2pt,bottom=2pt]\\ifx&#1&\\else\\textcolor{gray50}{\\small\\textbf{#1}}\\par\\fi#2\\end{tcolorbox}}
+
+\\newcommand{\\result}[1]{\\par\\vspace{3pt}\\begin{tcolorbox}[colback=lightgreen,colframe=accentgreen,arc=3pt,top=3pt,bottom=3pt,left=5pt,right=5pt]\\textbf{Αποτέλεσμα:} \\quad #1\\end{tcolorbox}}
+
+\\newcommand{\\points}[1]{\\hfill\\textcolor{accentorange}{\\small\\textbf{[+#1 μον.]}}}
+
+\\begin{document}
+
+\\begin{center}
+  {\\Large\\bfseries\\color{mainblue} ΑΝΑΛΥΤΙΚΕΣ ΛΥΣΕΙΣ}\\\\[4pt]
+  {\\large \\SOLclass\\ — \\SOLsubject\\ — \\SOLtopic}\\\\[2pt]
+  {\\color{gray50}\\small \\SOLdate}
+\\end{center}
+\\hrule height 1.5pt\\vspace{0.3cm}
+
+\\solthema{25}{Τίτλος Θέματος Α}
+
+\\solq{Εκφώνηση ερώτησης...}{25}
+
+\\step[Βήμα 1]{Πρώτο βήμα λύσης... \\points{10}}
+\\step[Βήμα 2]{Δεύτερο βήμα... \\points{15}}
+
+\\result{Τελικό αποτέλεσμα.}
+
+\\end{document}` }
+};
+
+let currentTemplate = 'theory';
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['convert','templates','guide'][i]===t));
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+}
+
+function showTemplate(t){
+  currentTemplate=t;
+  ['theory','exam','worksheet','solutions'].forEach(k=>{
+    document.getElementById('tc-'+k).classList.toggle('selected',k===t);
+  });
+  document.getElementById('template-name').textContent=TEMPLATES[t].name;
+  document.getElementById('template-view').value=TEMPLATES[t].content;
+}
+showTemplate('theory');
+
+function copyTemplate(){
+  navigator.clipboard.writeText(TEMPLATES[currentTemplate].content).then(()=>{alert('Αντιγράφηκε!');});
+}
+function downloadTemplate(){
+  const blob=new Blob([TEMPLATES[currentTemplate].content],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=TEMPLATES[currentTemplate].name;a.click();
+}
+
+// ==================== CONVERSION ====================
+const PROMPTS = {
+  exam_thema_d: `Έχω αυτό το Θέμα Δ από διαγώνισμα. Μετέτρεψέ το σε LaTeX χρησιμοποιώντας το template λύσεων — με αναλυτικά βήματα, \\points{} για κάθε βήμα, και \\result{} στο τέλος:
+
+`,
+  theory_section: `Έχω αυτές τις σημειώσεις θεωρίας. Μετέτρεψέ τες σε LaTeX χρησιμοποιώντας τα περιβάλλοντα definition, theorem, property, example, warning όπου ταιριάζει:
+
+`,
+  worksheet_topic: `Φτιάξε ένα φυλλάδιο εξάσκησης για: `,
+  solutions_full: `Έχω τις εκφωνήσεις του διαγωνίσματος. Φτιάξε πλήρεις αναλυτικές λύσεις σε LaTeX με βήμα-βήμα ανάπτυξη:
+
+`,
+  convert_plain: `Μετέτρεψε αυτό το απλό κείμενο/Word σε LaTeX διατηρώντας όλη τη μαθηματική σύνταξη:
+
+`
+};
+
+function setPrompt(key){
+  const ta=document.getElementById('input-text');
+  ta.value=PROMPTS[key]||'';
+  ta.focus();
+  updateCharCount();
+}
+
+document.getElementById('input-text').addEventListener('input', updateCharCount);
+function updateCharCount(){
+  const n=document.getElementById('input-text').value.length;
+  document.getElementById('char-count').textContent=n+' χαρακτήρες';
+}
+function clearInput(){document.getElementById('input-text').value='';updateCharCount();}
+
+async function convertToLatex(){
+  const input=document.getElementById('input-text').value.trim();
+  if(!input){alert('Επικόλλησε κείμενο πρώτα.');return;}
+  const docType=document.getElementById('doc-type').value;
+  const subject=document.getElementById('subject').value;
+  const extra=document.getElementById('extra-instructions').value.trim();
+
+  const typeLabels={theory:'Θεωρία/Σημειώσεις',exam:'Διαγώνισμα',worksheet:'Φυλλάδιο εξάσκησης',solutions:'Λύσεις διαγωνίσματος'};
+  const btn=document.getElementById('convert-btn');
+  btn.disabled=true; btn.textContent='Μετατροπή...';
+  document.getElementById('status-bar').innerHTML='<div style="display:flex;align-items:center;gap:8px;"><div class="dot-pulse"><span></span><span></span><span></span></div><span>Το AI επεξεργάζεται...</span></div>';
+  document.getElementById('output-text').value='';
+
+  const templateCode = TEMPLATES[docType]?.content?.slice(0, 800) || '';
+
+  const prompt = `Είσαι LaTeX expert για ελληνικά μαθηματικά. Ο χρήστης είναι καθηγητής μαθηματικών Β΄ Λυκείου που χρησιμοποιεί συγκεκριμένα templates.
+
+ΤΥΠΟΣ ΕΓΓΡΑΦΟΥ: ${typeLabels[docType]}
+ΜΑΘΗΜΑ: ${subject}
+${extra?'ΕΠΙΠΛΕΟΝ ΟΔΗΓΙΕΣ: '+extra:''}
+
+TEMPLATE STYLE (χρησιμοποίησε αυτά τα περιβάλλοντα και χρώματα):
+${templateCode}
+
+ΕΙΣΑΓΩΓΗ ΧΡΗΣΤΗ:
+${input}
+
+ΟΔΗΓΙΕΣ:
+- Παράγε ΜΟΝΟ έγκυρο LaTeX κώδικα, έτοιμο για compile
+- Χρησιμοποίησε τα περιβάλλοντα του template (definition, theorem, example, thema, question, step, result κτλ.)
+- Για μαθηματικούς τύπους χρησιμοποίησε $...$ και \\[...\\]
+- Τα ελληνικά γράμματα γράψε τα απευθείας (χρησιμοποιεί babel greek)
+- Ξεκίνα από \\begin{document} (όχι το preamble — το έχει ήδη το template)
+- Αν η είσοδος είναι περιγραφή ("Φτιάξε φυλλάδιο για..."), δημιούργησε πλήρες περιεχόμενο
+- Βάλε σχόλια % για να εξηγείς τη δομή
+- Απάντησε ΜΟΝΟ με LaTeX κώδικα, χωρίς εισαγωγή ή επεξήγηση`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:prompt}]})});
+    const data=await resp.json();
+    let text=data.content?.map(b=>b.text||'').join('')||'';
+    text=text.replace(/^```(?:latex|tex)?\n?/,'').replace(/\n?```$/,'').trim();
+    document.getElementById('output-text').value=text;
+    document.getElementById('status-bar').textContent='✓ Μετατροπή ολοκληρώθηκε — '+text.split('\n').length+' γραμμές LaTeX';
+  }catch(e){
+    document.getElementById('status-bar').textContent='Σφάλμα σύνδεσης. Δοκίμασε ξανά.';
+  }
+  btn.disabled=false; btn.textContent='Μετατροπή σε LaTeX →';
+}
+
+function copyOutput(){
+  const text=document.getElementById('output-text').value;
+  if(!text)return;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('copy-btn');
+    btn.textContent='✓ Αντιγράφηκε';
+    setTimeout(()=>btn.textContent='📋 Αντιγραφή',2000);
+  });
+}
+
+function downloadTex(){
+  const text=document.getElementById('output-text').value;
+  if(!text){alert('Δεν υπάρχει κώδικας για κατέβασμα.');return;}
+  const docType=document.getElementById('doc-type').value;
+  const names={theory:'theory',exam:'exam',worksheet:'worksheet',solutions:'solutions'};
+  const filename=names[docType]+'_'+new Date().toISOString().slice(0,10)+'.tex';
+  const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+}
+</script>
+
+
+<!-- ============ TEMPLATES DOWNLOAD SECTION ============ -->
+<div style="max-width:1100px;margin:0 auto;padding:0 0 2rem;">
+  <div style="background:#fff;border-radius:12px;padding:1.25rem;border:1px solid #eae8e2;margin-top:0;">
+    <div style="font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">
+      Κατεβάστε τα LaTeX Templates (.tex) — έτοιμα για Overleaf
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="template-dl-grid">
+      <div style="border:1px solid #eae8e2;border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:22px;margin-bottom:6px;">📘</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Θεωρία</div>
+        <div style="font-size:11px;color:#999;margin-bottom:10px;">Σημειώσεις Β΄ Λυκείου</div>
+        <button onclick="dlTemplate('theory')" style="width:100%;padding:6px;font-size:12px;font-weight:500;background:#1a1a18;color:#fff;border:none;border-radius:6px;cursor:pointer;">⬇ theory.tex</button>
+      </div>
+      <div style="border:1px solid #eae8e2;border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:22px;margin-bottom:6px;">📝</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Διαγώνισμα</div>
+        <div style="font-size:11px;color:#999;margin-bottom:10px;">Θέμα Α–Δ Β΄ Λυκείου</div>
+        <button onclick="dlTemplate('exam')" style="width:100%;padding:6px;font-size:12px;font-weight:500;background:#1a1a18;color:#fff;border:none;border-radius:6px;cursor:pointer;">⬇ exam.tex</button>
+      </div>
+      <div style="border:1px solid #eae8e2;border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:22px;margin-bottom:6px;">📄</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Φυλλάδιο</div>
+        <div style="font-size:11px;color:#999;margin-bottom:10px;">Εξάσκηση κλιμακωτή</div>
+        <button onclick="dlTemplate('worksheet')" style="width:100%;padding:6px;font-size:12px;font-weight:500;background:#1a1a18;color:#fff;border:none;border-radius:6px;cursor:pointer;">⬇ worksheet.tex</button>
+      </div>
+      <div style="border:1px solid #eae8e2;border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:22px;margin-bottom:6px;">✅</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Λύσεις</div>
+        <div style="font-size:11px;color:#999;margin-bottom:10px;">Αναλυτικές + μόρια</div>
+        <button onclick="dlTemplate('solutions')" style="width:100%;padding:6px;font-size:12px;font-weight:500;background:#1a1a18;color:#fff;border:none;border-radius:6px;cursor:pointer;">⬇ solutions.tex</button>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:#aaa;">
+      💡 Άνοιξε τα .tex αρχεία στο <a href="https://overleaf.com" target="_blank" style="color:#185fa5;">overleaf.com</a> — compiler: <strong>XeLaTeX</strong> — για άμεσο compile σε PDF.
+    </div>
+  </div>
+</div>
+
+<script>
+const FULL_TEMPLATES = {"theory": "% ============================================================\n%  ΘΕΩΡΙΑ / ΣΗΜΕΙΩΣΕΙΣ — Β ΛΥΚΕΙΟΥ\n%  Χρήστος Κεχαγιάς — Μαθηματικά\n%  Χρήση: pdflatex theory_template.tex\n% ============================================================\n\n\\documentclass[12pt,a4paper]{article}\n\n% --- Πακέτα ---\n\\usepackage[utf8]{inputenc}\n\\usepackage[greek,english]{babel}\n\\usepackage[T1]{fontenc}\n\\usepackage{lmodern}\n\\usepackage{amsmath, amssymb, amsthm}\n\\usepackage{geometry}\n\\usepackage{xcolor}\n\\usepackage{tcolorbox}\n\\usepackage{mdframed}\n\\usepackage{enumitem}\n\\usepackage{booktabs}\n\\usepackage{array}\n\\usepackage{graphicx}\n\\usepackage{fancyhdr}\n\\usepackage{titlesec}\n\\usepackage{hyperref}\n\\usepackage{pgfplots}\n\\pgfplotsset{compat=1.18}\n\n\\tcbuselibrary{theorems, skins, breakable}\n\n% --- Γεωμετρία σελίδας ---\n\\geometry{\n  a4paper,\n  top=2.5cm, bottom=2.5cm,\n  left=2.5cm, right=2.5cm,\n  headheight=15pt\n}\n\n% --- Χρώματα (παλέτα) ---\n\\definecolor{mainblue}{RGB}{26, 82, 160}\n\\definecolor{lightblue}{RGB}{219, 234, 254}\n\\definecolor{darkblue}{RGB}{15, 52, 110}\n\\definecolor{accentgreen}{RGB}{22, 101, 52}\n\\definecolor{lightgreen}{RGB}{220, 252, 231}\n\\definecolor{accentred}{RGB}{153, 27, 27}\n\\definecolor{lightred}{RGB}{254, 226, 226}\n\\definecolor{accentorange}{RGB}{146, 64, 14}\n\\definecolor{lightorange}{RGB}{255, 237, 213}\n\\definecolor{gray90}{RGB}{240, 240, 240}\n\\definecolor{gray50}{RGB}{107, 114, 128}\n\n% --- Header / Footer ---\n\\pagestyle{fancy}\n\\fancyhf{}\n\\fancyhead[L]{\\small\\textcolor{gray50}{\\textbf{Β΄ ΛΥΚΕΙΟΥ} — \\textsc{Μαθηματικά}}}\n\\fancyhead[R]{\\small\\textcolor{gray50}{\\MATHEMAsubject}}\n\\fancyfoot[C]{\\small\\textcolor{gray50}{\\thepage}}\n\\fancyfoot[R]{\\small\\textcolor{gray50}{Χρήστος Κεχαγιάς}}\n\\renewcommand{\\headrulewidth}{0.4pt}\n\\renewcommand{\\footrulewidth}{0.4pt}\n\n% --- Τίτλοι ενοτήτων ---\n\\titleformat{\\section}\n  {\\large\\bfseries\\color{mainblue}}\n  {\\thesection.}{0.5em}{}\n  [\\titlerule]\n\n\\titleformat{\\subsection}\n  {\\normalsize\\bfseries\\color{darkblue}}\n  {\\thesubsection.}{0.5em}{}\n\n\\titleformat{\\subsubsection}\n  {\\normalsize\\bfseries\\color{gray50}}\n  {\\thesubsubsection.}{0.5em}{}\n\n% ============================================================\n%  ΠΕΡΙΒΑΛΛΟΝΤΑ (tcolorbox)\n% ============================================================\n\n% ΟΡΙΣΜΟΣ\n\\newtcolorbox{definition}[1][]{\n  enhanced, breakable,\n  colback=lightblue, colframe=mainblue,\n  fonttitle=\\bfseries\\small,\n  title={Ορισμός\\ #1},\n  left=4pt, right=4pt, top=4pt, bottom=4pt,\n  arc=4pt\n}\n\n% ΘΕΩΡΗΜΑ\n\\newtcolorbox{theorem}[1][]{\n  enhanced, breakable,\n  colback=lightgreen, colframe=accentgreen,\n  fonttitle=\\bfseries\\small,\n  title={Θεώρημα\\ #1},\n  left=4pt, right=4pt, top=4pt, bottom=4pt,\n  arc=4pt\n}\n\n% ΙΔΙΟΤΗΤΑ\n\\newtcolorbox{property}[1][]{\n  enhanced, breakable,\n  colback=lightorange, colframe=accentorange,\n  fonttitle=\\bfseries\\small,\n  title={Ιδιότητα\\ #1},\n  left=4pt, right=4pt, top=4pt, bottom=4pt,\n  arc=4pt\n}\n\n% ΠΑΡΑΤΗΡΗΣΗ\n\\newtcolorbox{remark}{\n  enhanced, breakable,\n  colback=gray90, colframe=gray50,\n  fonttitle=\\bfseries\\small,\n  title={Παρατήρηση},\n  left=4pt, right=4pt, top=4pt, bottom=4pt,\n  arc=4pt\n}\n\n% ΠΑΡΑΔΕΙΓΜΑ\n\\newtcolorbox{example}[1][]{\n  enhanced, breakable,\n  colback=white, colframe=mainblue,\n  fonttitle=\\bfseries\\small\\color{mainblue},\n  title={Παράδειγμα\\ #1},\n  borderline west={2pt}{0pt}{mainblue},\n  left=8pt, right=4pt, top=4pt, bottom=4pt,\n  arc=0pt, boxrule=0pt,\n  frame hidden,\n  borderline west={2pt}{0pt}{mainblue}\n}\n\n% ΛΥΣΗ (μέσα σε παράδειγμα)\n\\newenvironment{solution}{\n  \\par\\smallskip\n  \\textcolor{accentgreen}{\\textbf{Λύση:}}\n  \\par\\smallskip\n}{}\n\n% ΠΡΟΣΟΧΗ / ΠΑΓΙΔΑ\n\\newtcolorbox{warning}{\n  enhanced,\n  colback=lightred, colframe=accentred,\n  fonttitle=\\bfseries\\small,\n  title={⚠ Προσοχή},\n  left=4pt, right=4pt, top=4pt, bottom=4pt,\n  arc=4pt\n}\n\n% ΤΥΠΟΣ / ΣΥΝΟΨΗ\n\\newtcolorbox{formula}[1][]{\n  enhanced,\n  colback=lightblue, colframe=darkblue,\n  fonttitle=\\bfseries\\small,\n  title={#1},\n  halign=center,\n  left=4pt, right=4pt, top=6pt, bottom=6pt,\n  arc=4pt\n}\n\n% ============================================================\n%  ΜΕΤΑΒΛΗΤΕΣ ΕΓΓΡΑΦΟΥ — ΑΛΛΑΞΕ ΜΟΝΟ ΕΔΩ\n% ============================================================\n\\newcommand{\\MATHEMAsubject}{Άλγεβρα}        % Άλγεβρα / Γεωμετρία / Ανάλυση κτλ\n\\newcommand{\\MATHEMAtopic}{Τριγωνομετρία}    % Ενότητα\n\\newcommand{\\MATHEMAchapter}{Κεφάλαιο 3}     % Κεφάλαιο\n\\newcommand{\\MATHEMAdate}{\\today}             % Ημερομηνία\n\n% ============================================================\n\\begin{document}\n% ============================================================\n\n% --- Τίτλος ---\n\\begin{center}\n  {\\LARGE\\bfseries\\color{mainblue} \\MATHEMAchapter}\\\\[6pt]\n  {\\Large\\bfseries \\MATHEMAtopic}\\\\[4pt]\n  {\\large\\color{gray50} Β΄ Λυκείου — \\MATHEMAsubject}\\\\[2pt]\n  {\\small\\color{gray50} \\MATHEMAdate}\n\\end{center}\n\n\\vspace{0.5cm}\n\\hrule height 1.5pt\n\\vspace{0.8cm}\n\n% ============================================================\n\\section{Εισαγωγή}\n% ============================================================\n\nΣύντομη εισαγωγή στην ενότητα. Τι θα δούμε και γιατί είναι σημαντικό.\n\n% ============================================================\n\\section{Ορισμοί}\n% ============================================================\n\n\\begin{definition}[— Ημίτονο]\n  Για γωνία $\\theta$ σε ορθογώνιο τρίγωνο:\n  \\[\n    \\sin\\theta = \\frac{\\text{απέναντι κάθετη}}{\\text{υποτείνουσα}}\n  \\]\n\\end{definition}\n\n\\begin{definition}[— Συνημίτονο]\n  \\[\n    \\cos\\theta = \\frac{\\text{προσκείμενη κάθετη}}{\\text{υποτείνουσα}}\n  \\]\n\\end{definition}\n\n% ============================================================\n\\section{Θεωρήματα και Ιδιότητες}\n% ============================================================\n\n\\begin{theorem}[Πυθαγόρεια ταυτότητα]\n  Για κάθε $\\theta \\in \\mathbb{R}$:\n  \\[\n    \\sin^2\\theta + \\cos^2\\theta = 1\n  \\]\n\\end{theorem}\n\n\\begin{property}[Ημιτόνου]\n  \\[\n    -1 \\leq \\sin\\theta \\leq 1, \\quad \\forall\\, \\theta \\in \\mathbb{R}\n  \\]\n\\end{property}\n\n\\begin{remark}\n  Η Πυθαγόρεια ταυτότητα προκύπτει άμεσα από το Θεώρημα του Πυθαγόρα.\n  Είναι από τις πιο χρήσιμες ταυτότητες — θα τη δούμε παντού.\n\\end{remark}\n\n% ============================================================\n\\section{Βασικοί Τύποι}\n% ============================================================\n\n\\begin{formula}[Τριγωνομετρικές Ταυτότητες]\n  \\begin{align*}\n    \\sin^2\\theta + \\cos^2\\theta &= 1 \\\\\n    1 + \\tan^2\\theta &= \\frac{1}{\\cos^2\\theta} \\\\\n    \\sin(2\\theta) &= 2\\sin\\theta\\cos\\theta \\\\\n    \\cos(2\\theta) &= \\cos^2\\theta - \\sin^2\\theta\n  \\end{align*}\n\\end{formula}\n\n% ============================================================\n\\section{Παραδείγματα}\n% ============================================================\n\n\\begin{example}[1]\n  Να υπολογιστεί η τιμή της έκφρασης $\\sin^2(30°) + \\cos^2(30°)$.\n\n  \\begin{solution}\n    Γνωρίζουμε ότι $\\sin(30°) = \\dfrac{1}{2}$ και $\\cos(30°) = \\dfrac{\\sqrt{3}}{2}$.\n\n    Άρα:\n    \\[\n      \\sin^2(30°) + \\cos^2(30°) = \\left(\\frac{1}{2}\\right)^2 + \\left(\\frac{\\sqrt{3}}{2}\\right)^2\n      = \\frac{1}{4} + \\frac{3}{4} = 1 \\checkmark\n    \\]\n  \\end{solution}\n\\end{example}\n\n\\begin{example}[2]\n  Αν $\\sin\\theta = \\dfrac{3}{5}$ και $\\theta \\in \\left(0, \\dfrac{\\pi}{2}\\right)$, να βρεθεί το $\\cos\\theta$.\n\n  \\begin{solution}\n    Από την Πυθαγόρεια ταυτότητα:\n    \\[\n      \\cos^2\\theta = 1 - \\sin^2\\theta = 1 - \\frac{9}{25} = \\frac{16}{25}\n    \\]\n    Επειδή $\\theta \\in \\left(0, \\dfrac{\\pi}{2}\\right)$, έχουμε $\\cos\\theta > 0$, άρα:\n    \\[\n      \\cos\\theta = \\frac{4}{5}\n    \\]\n  \\end{solution}\n\\end{example}\n\n% ============================================================\n\\section{Συχνά Λάθη — Παγίδες}\n% ============================================================\n\n\\begin{warning}\n  \\begin{itemize}[leftmargin=*]\n    \\item $\\sin(A+B) \\neq \\sin A + \\sin B$ — πολύ συχνό λάθος!\n    \\item $\\sqrt{\\sin^2\\theta} = |\\sin\\theta|$, \\textbf{όχι} $\\sin\\theta$.\n    \\item Προσοχή στο πεδίο ορισμού: $\\tan\\theta$ δεν ορίζεται όταν $\\cos\\theta = 0$.\n  \\end{itemize}\n\\end{warning}\n\n% ============================================================\n\\section{Σύνοψη Ενότητας}\n% ============================================================\n\n\\begin{tcolorbox}[colback=lightblue, colframe=darkblue, title=\\textbf{Κρατάω στο μυαλό μου...}, arc=4pt]\n  \\begin{itemize}[leftmargin=*]\n    \\item \\textbf{Ορισμοί:} $\\sin\\theta$, $\\cos\\theta$, $\\tan\\theta$ μέσω ορθογωνίου τριγώνου\n    \\item \\textbf{Κύρια ταυτότητα:} $\\sin^2\\theta + \\cos^2\\theta = 1$\n    \\item \\textbf{Ειδικές γωνίες:} $0°, 30°, 45°, 60°, 90°$ — πρέπει να τις ξέρω απ' έξω\n    \\item \\textbf{Παγίδα:} $\\sin(A+B) \\neq \\sin A + \\sin B$\n  \\end{itemize}\n\\end{tcolorbox}\n\n\\end{document}\n", "exam": "% ============================================================\n%  ΔΙΑΓΩΝΙΣΜΑ — Β ΛΥΚΕΙΟΥ\n%  Χρήστος Κεχαγιάς — Μαθηματικά\n%  Χρήση: pdflatex exam_template.tex\n% ============================================================\n\n\\documentclass[12pt,a4paper]{article}\n\n\\usepackage[utf8]{inputenc}\n\\usepackage[greek,english]{babel}\n\\usepackage[T1]{fontenc}\n\\usepackage{lmodern}\n\\usepackage{amsmath, amssymb}\n\\usepackage{geometry}\n\\usepackage{xcolor}\n\\usepackage{tcolorbox}\n\\usepackage{enumitem}\n\\usepackage{array}\n\\usepackage{tabularx}\n\\usepackage{multirow}\n\\usepackage{fancyhdr}\n\\usepackage{tikz}\n\\usepackage{pgfplots}\n\\pgfplotsset{compat=1.18}\n\n\\tcbuselibrary{skins}\n\n\\geometry{a4paper, top=2cm, bottom=2cm, left=2.5cm, right=2.5cm, headheight=15pt}\n\n% --- Χρώματα ---\n\\definecolor{mainblue}{RGB}{26, 82, 160}\n\\definecolor{darkblue}{RGB}{15, 52, 110}\n\\definecolor{lightblue}{RGB}{219, 234, 254}\n\\definecolor{accentred}{RGB}{153, 27, 27}\n\\definecolor{lightred}{RGB}{254, 226, 226}\n\\definecolor{gray90}{RGB}{240, 240, 240}\n\\definecolor{gray50}{RGB}{107, 114, 128}\n\n% ============================================================\n%  ΜΕΤΑΒΛΗΤΕΣ — ΑΛΛΑΞΕ ΜΟΝΟ ΕΔΩ\n% ============================================================\n\\newcommand{\\EXAMsubject}{Άλγεβρα}\n\\newcommand{\\EXAMtopic}{Τριγωνομετρία — Κεφάλαιο 3}\n\\newcommand{\\EXAMclass}{Β΄ Λυκείου}\n\\newcommand{\\EXAMdate}{Ιανουάριος 2025}\n\\newcommand{\\EXAMduration}{2 ώρες}\n\\newcommand{\\EXAMtotal}{100}   % Συνολικές μονάδες\n\n% --- Header ---\n\\pagestyle{fancy}\n\\fancyhf{}\n\\fancyhead[L]{\\small\\textbf{\\EXAMclass} — \\EXAMsubject}\n\\fancyhead[R]{\\small\\EXAMdate}\n\\fancyfoot[C]{\\small\\thepage}\n\\fancyfoot[R]{\\small\\textcolor{gray50}{Χρήστος Κεχαγιάς}}\n\\renewcommand{\\headrulewidth}{0.4pt}\n\n% --- Περιβάλλον θέματος ---\n\\newcounter{themacounter}\n\\newcommand{\\thema}[2]{%\n  \\stepcounter{themacounter}%\n  \\vspace{0.5cm}\n  \\begin{tcolorbox}[\n    enhanced,\n    colback=lightblue, colframe=mainblue,\n    leftrule=4pt, toprule=0.4pt, bottomrule=0.4pt, rightrule=0.4pt,\n    arc=3pt,\n    fonttitle=\\bfseries,\n    title={\\large ΘΕΜΑ \\Alph{themacounter} \\hfill \\normalsize\\textcolor{mainblue}{(#1 μονάδες)}}\n  ]\n  #2\n  \\end{tcolorbox}\n}\n\n% Περιβάλλον ερώτησης μέσα σε θέμα\n\\newcounter{questioncounter}[themacounter]\n\\newcommand{\\question}[2]{%\n  \\stepcounter{questioncounter}%\n  \\par\\vspace{4pt}\n  \\noindent\\textbf{\\alph{questioncounter})} \\, #1\n  \\hfill\\textcolor{gray50}{\\small(#2 μον.)}\n  \\par\n}\n\n% Χώρος απάντησης\n\\newcommand{\\answerspace}[1]{\\vspace{#1}}\n\n% ============================================================\n\\begin{document}\n% ============================================================\n\n% ============================================================\n% ΕΠΙΚΕΦΑΛΙΔΑ ΔΙΑΓΩΝΙΣΜΑΤΟΣ\n% ============================================================\n\n\\noindent\n\\begin{tcolorbox}[\n  enhanced,\n  colback=mainblue, colframe=darkblue,\n  arc=5pt, top=10pt, bottom=10pt\n]\n\\begin{center}\n  \\textcolor{white}{\\textbf{\\Large ΔΙΑΓΩΝΙΣΜΑ \\EXAMsubject}}\\\\[4pt]\n  \\textcolor{white}{\\large \\EXAMtopic}\\\\[2pt]\n  \\textcolor{white}{\\EXAMclass \\quad · \\quad \\EXAMdate \\quad · \\quad Διάρκεια: \\EXAMduration}\n\\end{center}\n\\end{tcolorbox}\n\n\\vspace{6pt}\n\n% Πλαίσιο στοιχείων μαθητή\n\\noindent\n\\begin{tcolorbox}[colback=gray90, colframe=gray50, arc=3pt, top=6pt, bottom=6pt]\n\\begin{tabular}{p{7cm} p{5cm} p{3cm}}\n  \\textbf{Ονοματεπώνυμο:} \\dotfill & \\textbf{Τμήμα:} \\dotfill & \\textbf{Βαθμός:} \\dotfill\n\\end{tabular}\n\\end{tcolorbox}\n\n\\vspace{4pt}\n\\noindent{\\small\\textit{Καλή επιτυχία! Να απαντήσετε σε \\textbf{όλα} τα θέματα. Διαθέσιμος χρόνος: \\textbf{\\EXAMduration}.}}\n\\vspace{0.3cm}\n\n% ============================================================\n% ΘΕΜΑ Α — ΘΕΩΡΙΑ / ΑΛΗΘΕΙΑ-ΨΕΥΔΟΣ / ΠΟΛΛΑΠΛΗ ΕΠΙΛΟΓΗ\n% ============================================================\n\n\\thema{25}{\n  \\question{Να χαρακτηρίσετε τις παρακάτω προτάσεις ως \\textbf{Σωστές (Σ)} ή \\textbf{Λάθος (Λ)}:}{15}\n\n  \\vspace{4pt}\n  \\begin{enumerate}[label=\\roman*., leftmargin=1.5cm]\n    \\item Ισχύει $\\sin^2\\theta + \\cos^2\\theta = 1$ για κάθε $\\theta \\in \\mathbb{R}$. \\dotfill \\textbf{\\phantom{Σ}}\n    \\item Η συνάρτηση $f(x)=\\sin x$ είναι άρτια. \\dotfill \\textbf{\\phantom{Λ}}\n    \\item Ισχύει $\\sin(A+B)=\\sin A + \\sin B$. \\dotfill \\textbf{\\phantom{Λ}}\n    \\item Για $x\\in(0,\\pi)$ ισχύει $\\sin x > 0$. \\dotfill \\textbf{\\phantom{Σ}}\n    \\item Η $\\tan\\theta$ ορίζεται για κάθε $\\theta \\in \\mathbb{R}$. \\dotfill \\textbf{\\phantom{Λ}}\n  \\end{enumerate}\n\n  \\vspace{0.3cm}\n  \\question{Να συμπληρώσετε τα κενά:}{10}\n\n  \\vspace{4pt}\n  \\begin{enumerate}[label=\\roman*., leftmargin=1.5cm]\n    \\item $\\sin(90°) = $ \\dotfill\n    \\item $\\cos(0°) = $ \\dotfill\n    \\item $\\tan(45°) = $ \\dotfill\n    \\item Αν $\\sin\\theta = \\frac{1}{2}$ και $\\theta\\in(0°, 90°)$, τότε $\\theta = $ \\dotfill\n  \\end{enumerate}\n}\n\n% ============================================================\n% ΘΕΜΑ Β — ΥΠΟΛΟΓΙΣΤΙΚΑ / ΕΦΑΡΜΟΓΗ ΤΥΠΩΝ\n% ============================================================\n\n\\thema{25}{\n  \\question{%\n    Αν $\\sin\\theta = \\dfrac{5}{13}$ και $\\theta \\in \\left(\\dfrac{\\pi}{2}, \\pi\\right)$,\n    να υπολογίσετε τις τιμές των $\\cos\\theta$, $\\tan\\theta$.\n  }{12}\n\n  \\answerspace{5cm}\n\n  \\question{%\n    Να αποδείξετε ότι: $\\dfrac{1-\\cos^2\\theta}{\\sin\\theta} = \\sin\\theta$, \\; $\\sin\\theta \\neq 0$.\n  }{13}\n\n  \\answerspace{4cm}\n}\n\n% ============================================================\n% ΘΕΜΑ Γ — ΕΞΙΣΩΣΕΙΣ / ΑΝΙΣΩΣΕΙΣ\n% ============================================================\n\n\\thema{25}{\n  \\question{%\n    Να λύσετε την εξίσωση $2\\sin x - \\sqrt{3} = 0$ στο $[0, 2\\pi)$.\n  }{13}\n\n  \\answerspace{5cm}\n\n  \\question{%\n    Να λύσετε την ανίσωση $\\cos x > \\dfrac{1}{2}$ στο $[0, 2\\pi)$.\n  }{12}\n\n  \\answerspace{5cm}\n}\n\n% ============================================================\n% ΘΕΜΑ Δ — ΑΝΩΤΕΡΗ ΔΥΣΚΟΛΙΑ / ΑΝΟΙΧΤΟ ΠΡΟΒΛΗΜΑ\n% ============================================================\n\n\\thema{25}{\n  \\question{%\n    Δίνεται $f(x) = 2\\sin\\!\\left(x + \\dfrac{\\pi}{6}\\right)$.\n  }{10}\n\n  \\vspace{4pt}\n  \\begin{enumerate}[label=\\alph*), leftmargin=1.5cm]\n    \\item Να βρεθεί το πεδίο τιμών της $f$.\n    \\item Να βρεθούν τα μηδενικά της $f$ στο $[0, 2\\pi)$.\n  \\end{enumerate}\n\n  \\answerspace{5cm}\n\n  \\question{%\n    Αν $\\sin\\alpha + \\cos\\alpha = \\dfrac{1}{\\sqrt{2}}$, να υπολογίσετε τo $\\sin\\alpha \\cdot \\cos\\alpha$\n    και στη συνέχεια το $\\sin^3\\alpha + \\cos^3\\alpha$.\n  }{15}\n\n  \\answerspace{7cm}\n}\n\n% ============================================================\n% ΒΑΘΜΟΛΟΓΙΟ (προαιρετικό, στη σελίδα του καθηγητή)\n% ============================================================\n\\newpage\n\\begin{tcolorbox}[colback=gray90, colframe=gray50, title=\\textbf{Βαθμολόγιο (για καθηγητή)}, arc=3pt]\n\\begin{tabular}{|c|c|c|c|}\n\\hline\n\\textbf{Θέμα} & \\textbf{Μονάδες} & \\textbf{Βαθμός} & \\textbf{Σχόλια} \\\\\n\\hline\nΑ & 25 & & \\\\\n\\hline\nΒ & 25 & & \\\\\n\\hline\nΓ & 25 & & \\\\\n\\hline\nΔ & 25 & & \\\\\n\\hline\n\\textbf{Σύνολο} & \\textbf{100} & & \\\\\n\\hline\n\\end{tabular}\n\\end{tcolorbox}\n\n\\end{document}\n", "worksheet": "% ============================================================\n%  ΦΥΛΛΑΔΙΟ ΕΞΑΣΚΗΣΗΣ — Β ΛΥΚΕΙΟΥ\n%  Χρήστος Κεχαγιάς — Μαθηματικά\n%  Χρήση: pdflatex worksheet_template.tex\n% ============================================================\n\n\\documentclass[11pt,a4paper]{article}\n\n\\usepackage[utf8]{inputenc}\n\\usepackage[greek,english]{babel}\n\\usepackage[T1]{fontenc}\n\\usepackage{lmodern}\n\\usepackage{amsmath, amssymb}\n\\usepackage{geometry}\n\\usepackage{xcolor}\n\\usepackage{tcolorbox}\n\\usepackage{enumitem}\n\\usepackage{multicol}\n\\usepackage{fancyhdr}\n\\usepackage{tikz}\n\\usepackage{pgfplots}\n\\pgfplotsset{compat=1.18}\n\n\\tcbuselibrary{skins, breakable}\n\n\\geometry{a4paper, top=2cm, bottom=2.2cm, left=2cm, right=2cm, headheight=15pt}\n\n% --- Χρώματα ---\n\\definecolor{mainblue}{RGB}{26, 82, 160}\n\\definecolor{darkblue}{RGB}{15, 52, 110}\n\\definecolor{lightblue}{RGB}{219, 234, 254}\n\\definecolor{accentgreen}{RGB}{22, 101, 52}\n\\definecolor{lightgreen}{RGB}{220, 252, 231}\n\\definecolor{accentred}{RGB}{153, 27, 27}\n\\definecolor{lightred}{RGB}{254, 226, 226}\n\\definecolor{lightorange}{RGB}{255, 237, 213}\n\\definecolor{accentorange}{RGB}{146, 64, 14}\n\\definecolor{gray90}{RGB}{240, 240, 240}\n\\definecolor{gray50}{RGB}{107, 114, 128}\n\n% ============================================================\n%  ΜΕΤΑΒΛΗΤΕΣ — ΑΛΛΑΞΕ ΜΟΝΟ ΕΔΩ\n% ============================================================\n\\newcommand{\\WSsubject}{Άλγεβρα}\n\\newcommand{\\WStopic}{Θέμα Δ — Τριγωνομετρικές Εξισώσεις}\n\\newcommand{\\WSclass}{Β΄ Λυκείου}\n\\newcommand{\\WSdate}{\\today}\n\\newcommand{\\WSfocus}{Στοχευμένη εξάσκηση στις τεχνικές Θέματος Δ}  % Σύντομη περιγραφή\n\n% --- Header ---\n\\pagestyle{fancy}\n\\fancyhf{}\n\\fancyhead[L]{\\small\\textbf{Φυλλάδιο Εξάσκησης} — \\WSclass\\ · \\WSsubject}\n\\fancyhead[R]{\\small\\WSdate}\n\\fancyfoot[C]{\\small\\thepage}\n\\fancyfoot[R]{\\small\\textcolor{gray50}{Χρήστος Κεχαγιάς}}\n\\renewcommand{\\headrulewidth}{0.4pt}\n\n% --- Δυσκολία ---\n\\newcommand{\\easy}{\\textcolor{accentgreen}{\\textbf{[⬤ Βασική]}}}\n\\newcommand{\\medium}{\\textcolor{accentorange}{\\textbf{[⬤⬤ Μέτρια]}}}\n\\newcommand{\\hard}{\\textcolor{accentred}{\\textbf{[⬤⬤⬤ Προχωρημένη]}}}\n\n% --- Αριθμός άσκησης ---\n\\newcounter{exnum}\n\\newcommand{\\ex}[2][]{%\n  \\stepcounter{exnum}%\n  \\vspace{6pt}\n  \\noindent\\textbf{Άσκηση \\theexnum.}\\ #2\\ \\ifx&#1&\\else\\; #1\\fi\n  \\par\n}\n\n% --- Χώρος απάντησης ---\n\\newcommand{\\ws}[1]{\\vspace{#1}}\n\n% ============================================================\n\\begin{document}\n% ============================================================\n\n% --- Επικεφαλίδα ---\n\\begin{tcolorbox}[\n  enhanced,\n  colback=mainblue, colframe=darkblue,\n  arc=5pt, top=8pt, bottom=8pt\n]\n\\begin{center}\n  \\textcolor{white}{\\textbf{\\large \\WStopic}}\\\\[3pt]\n  \\textcolor{white}{\\WSclass \\quad · \\quad \\WSsubject \\quad · \\quad \\WSdate}\\\\[2pt]\n  \\textcolor{white}{\\small\\textit{\\WSfocus}}\n\\end{center}\n\\end{tcolorbox}\n\n\\vspace{4pt}\n\n% --- Οδηγίες / Στόχος ---\n\\begin{tcolorbox}[colback=lightblue, colframe=mainblue, arc=3pt, left=6pt, right=6pt, top=4pt, bottom=4pt]\n  \\small\\textbf{Στόχος:} Εξάσκηση στις τεχνικές επίλυσης τριγωνομετρικών εξισώσεων που εμφανίζονται στο Θέμα Δ.\n  Οι ασκήσεις είναι ταξινομημένες κατά αύξουσα δυσκολία.\n  \\quad \\easy\\ \\quad \\medium\\ \\quad \\hard\n\\end{tcolorbox}\n\n\\vspace{0.3cm}\n\n% ============================================================\n%  ΕΝΟΤΗΤΑ 1 — ΒΑΣΙΚΕΣ ΕΞΙΣΩΣΕΙΣ\n% ============================================================\n\\begin{tcolorbox}[colback=gray90, colframe=gray50, arc=3pt, top=3pt, bottom=3pt]\n  \\textbf{Ενότητα 1 — Βασικές Τριγωνομετρικές Εξισώσεις}\n\\end{tcolorbox}\n\n\\begin{multicols}{2}\n\n\\ex[\\easy]{Να λύσετε στο $[0, 2\\pi)$:\n  \\[ \\sin x = \\frac{\\sqrt{2}}{2} \\]}\n\n\\ws{3.5cm}\n\n\\ex[\\easy]{Να λύσετε στο $[0, 2\\pi)$:\n  \\[ \\cos x = -\\frac{1}{2} \\]}\n\n\\ws{3.5cm}\n\n\\ex[\\medium]{Να λύσετε στο $[0, 2\\pi)$:\n  \\[ 2\\sin x - 1 = 0 \\]}\n\n\\ws{3.5cm}\n\n\\ex[\\medium]{Να λύσετε στο $\\mathbb{R}$:\n  \\[ \\cos 2x = \\frac{\\sqrt{3}}{2} \\]}\n\n\\ws{4cm}\n\n\\end{multicols}\n\n% ============================================================\n%  ΕΝΟΤΗΤΑ 2 — ΕΞΙΣΩΣΕΙΣ ΜΕ ΜΕΤΑΣΧΗΜΑΤΙΣΜΟ\n% ============================================================\n\\begin{tcolorbox}[colback=lightblue, colframe=mainblue, arc=3pt, top=3pt, bottom=3pt]\n  \\textbf{Ενότητα 2 — Εξισώσεις με Μετασχηματισμό}\n\\end{tcolorbox}\n\n\\ex[\\medium]{Να λύσετε στο $[0, 2\\pi)$:\n  \\[ 2\\sin^2 x - \\sin x - 1 = 0 \\]\n  \\textit{Υπόδειξη: αντικατάσταση $t = \\sin x$.}}\n\n\\ws{5cm}\n\n\\ex[\\medium]{Να λύσετε στο $[0, 2\\pi)$:\n  \\[ \\cos 2x = \\sin x \\]\n  \\textit{Υπόδειξη: $\\cos 2x = 1 - 2\\sin^2 x$.}}\n\n\\ws{5.5cm}\n\n\\ex[\\hard]{Να λύσετε στο $[0, 2\\pi)$:\n  \\[ \\sin x + \\cos x = 1 \\]\n  \\textit{Υπόδειξη: Τετραγωνισμός ή βοηθητική γωνία.}}\n\n\\ws{6cm}\n\n% ============================================================\n%  ΕΝΟΤΗΤΑ 3 — ΘΕΜΑ Δ ΕΠΙΠΕΔΟΥ\n% ============================================================\n\\begin{tcolorbox}[colback=lightorange, colframe=accentorange, arc=3pt, top=3pt, bottom=3pt]\n  \\textbf{Ενότητα 3 — Τύπου Θέμα Δ} \\quad\\small(απαιτούν ανάλυση)\n\\end{tcolorbox}\n\n\\ex[\\hard]{%\n  \\textbf{(Τύπος Θέμα Δ — 2023)}\n  Αν $\\sin\\alpha + \\cos\\alpha = \\dfrac{\\sqrt{6}}{2}$:\n  \\begin{enumerate}[label=\\alph*), leftmargin=1.2cm]\n    \\item Να βρείτε το $\\sin\\alpha \\cdot \\cos\\alpha$.\n    \\item Να βρείτε το $|\\sin\\alpha - \\cos\\alpha|$.\n    \\item Να βρείτε το $\\sin^3\\alpha + \\cos^3\\alpha$.\n  \\end{enumerate}}\n\n\\ws{8cm}\n\n\\ex[\\hard]{%\n  \\textbf{(Τύπος Θέμα Δ — Σύνθετο)}\n  Να αποδείξετε ότι για κάθε $\\theta$ για το οποίο ορίζεται:\n  \\[\n    \\frac{\\sin\\theta}{1+\\cos\\theta} + \\frac{1+\\cos\\theta}{\\sin\\theta} = \\frac{2}{\\sin\\theta}\n  \\]}\n\n\\ws{7cm}\n\n% --- Τέλος φυλλαδίου ---\n\\vfill\n\\begin{tcolorbox}[colback=lightgreen, colframe=accentgreen, arc=3pt, top=4pt, bottom=4pt]\n  \\small\\textbf{Υπενθύμιση:} Στο Θέμα Δ η πλήρης βαθμολόγηση απαιτεί \\textbf{πλήρη αιτιολόγηση} κάθε βήματος.\n  Δεν αρκεί το σωστό αποτέλεσμα — εξηγώ τι κάνω και γιατί.\n\\end{tcolorbox}\n\n\\end{document}\n", "solutions": "% ============================================================\n%  ΛΥΣΕΙΣ ΔΙΑΓΩΝΙΣΜΑΤΟΣ — Β ΛΥΚΕΙΟΥ\n%  Χρήστος Κεχαγιάς — Μαθηματικά\n%  Χρήση: pdflatex solutions_template.tex\n% ============================================================\n\n\\documentclass[11pt,a4paper]{article}\n\n\\usepackage[utf8]{inputenc}\n\\usepackage[greek,english]{babel}\n\\usepackage[T1]{fontenc}\n\\usepackage{lmodern}\n\\usepackage{amsmath, amssymb}\n\\usepackage{geometry}\n\\usepackage{xcolor}\n\\usepackage{tcolorbox}\n\\usepackage{enumitem}\n\\usepackage{fancyhdr}\n\\usepackage{tikz}\n\\usepackage{pgfplots}\n\\pgfplotsset{compat=1.18}\n\n\\tcbuselibrary{skins, breakable}\n\n\\geometry{a4paper, top=2cm, bottom=2.2cm, left=2.5cm, right=2.5cm, headheight=15pt}\n\n% --- Χρώματα ---\n\\definecolor{mainblue}{RGB}{26, 82, 160}\n\\definecolor{darkblue}{RGB}{15, 52, 110}\n\\definecolor{lightblue}{RGB}{219, 234, 254}\n\\definecolor{accentgreen}{RGB}{22, 101, 52}\n\\definecolor{lightgreen}{RGB}{220, 252, 231}\n\\definecolor{accentred}{RGB}{153, 27, 27}\n\\definecolor{lightred}{RGB}{254, 226, 226}\n\\definecolor{accentorange}{RGB}{146, 64, 14}\n\\definecolor{lightorange}{RGB}{255, 237, 213}\n\\definecolor{gray90}{RGB}{240, 240, 240}\n\\definecolor{gray50}{RGB}{107, 114, 128}\n\n% ============================================================\n%  ΜΕΤΑΒΛΗΤΕΣ — ΑΛΛΑΞΕ ΜΟΝΟ ΕΔΩ\n% ============================================================\n\\newcommand{\\SOLsubject}{Άλγεβρα}\n\\newcommand{\\SOLtopic}{Τριγωνομετρία}\n\\newcommand{\\SOLclass}{Β΄ Λυκείου}\n\\newcommand{\\SOLdate}{Ιανουάριος 2025}\n\n% --- Header ---\n\\pagestyle{fancy}\n\\fancyhf{}\n\\fancyhead[L]{\\small\\textbf{ΛΥΣΕΙΣ} — \\SOLclass\\ · \\SOLsubject\\ · \\SOLtopic}\n\\fancyhead[R]{\\small\\SOLdate}\n\\fancyfoot[C]{\\small\\thepage}\n\\fancyfoot[R]{\\small\\textcolor{gray50}{Χρήστος Κεχαγιάς}}\n\\renewcommand{\\headrulewidth}{0.4pt}\n\n% --- Θέμα header ---\n\\newcounter{solthema}\n\\newcommand{\\solthema}[2]{%\n  \\stepcounter{solthema}%\n  \\vspace{0.5cm}\n  \\begin{tcolorbox}[\n    enhanced,\n    colback=mainblue, colframe=darkblue,\n    arc=4pt, top=5pt, bottom=5pt,\n    left=8pt\n  ]\n    \\textcolor{white}{\\large\\textbf{ΘΕΜΑ \\Alph{solthema}}} \\hfill \\textcolor{white}{\\small(#1 μονάδες)}\\\\\n    \\textcolor{lightblue}{\\small #2}\n  \\end{tcolorbox}\n}\n\n% --- Ερώτηση header ---\n\\newcounter{solq}[solthema]\n\\newcommand{\\solq}[2]{%\n  \\stepcounter{solq}%\n  \\vspace{6pt}\n  \\noindent\n  \\begin{tcolorbox}[\n    colback=gray90, colframe=gray50,\n    arc=3pt, top=3pt, bottom=3pt, left=5pt,\n    right=5pt\n  ]\n    \\textbf{\\alph{solq})} \\; \\small\\textit{#1} \\hfill \\textcolor{gray50}{\\small(#2 μον.)}\n  \\end{tcolorbox}\n}\n\n% --- Βήμα λύσης ---\n\\newcounter{stepnum}[solq]\n\\newcommand{\\step}[2][]{%\n  \\stepcounter{stepnum}%\n  \\par\\vspace{4pt}\n  \\noindent\n  \\begin{tcolorbox}[\n    enhanced,\n    colback=white, colframe=mainblue,\n    borderline west={2pt}{0pt}{mainblue},\n    arc=0pt, boxrule=0pt, frame hidden,\n    left=8pt, right=4pt, top=2pt, bottom=2pt\n  ]\n    \\ifx&#1&\\else\\textcolor{gray50}{\\small\\textbf{#1}}\\par\\fi\n    #2\n  \\end{tcolorbox}\n}\n\n% --- Αποτέλεσμα ---\n\\newcommand{\\result}[1]{%\n  \\par\\vspace{3pt}\n  \\begin{tcolorbox}[\n    colback=lightgreen, colframe=accentgreen,\n    arc=3pt, top=3pt, bottom=3pt, left=5pt, right=5pt\n  ]\n    \\textbf{Αποτέλεσμα:} \\quad #1\n  \\end{tcolorbox}\n}\n\n% --- Μοριοδότηση ---\n\\newcommand{\\points}[1]{%\n  \\hfill\\textcolor{accentorange}{\\small\\textbf{[+#1 μον.]}}%\n}\n\n% --- Παρατήρηση / Εναλλακτική ---\n\\newcommand{\\solnote}[1]{%\n  \\begin{tcolorbox}[colback=lightorange, colframe=accentorange, arc=3pt, top=3pt, bottom=3pt, left=5pt]\n    \\small\\textbf{Παρατήρηση:} #1\n  \\end{tcolorbox}\n}\n\n% ============================================================\n\\begin{document}\n% ============================================================\n\n\\begin{center}\n  {\\Large\\bfseries\\color{mainblue} ΑΝΑΛΥΤΙΚΕΣ ΛΥΣΕΙΣ}\\\\[4pt]\n  {\\large \\SOLclass\\ — \\SOLsubject\\ — \\SOLtopic}\\\\[2pt]\n  {\\color{gray50}\\small \\SOLdate \\quad · \\quad Χρήστος Κεχαγιάς}\n\\end{center}\n\\hrule height 1.5pt\n\\vspace{0.3cm}\n\n% ============================================================\n\\solthema{25}{Αλήθεια-Ψέμα και Συμπλήρωση Κενών}\n% ============================================================\n\n\\solq{Να χαρακτηρίσετε τις προτάσεις ως Σωστές ή Λάθος:}{15}\n\n\\step[Πρόταση (i)]{%\n  $\\sin^2\\theta + \\cos^2\\theta = 1$ για κάθε $\\theta \\in \\mathbb{R}$.\\\\\n  Αυτή είναι η Πυθαγόρεια ταυτότητα — \\textbf{αληθής}. \\points{3}\n}\n\n\\step[Πρόταση (ii)]{%\n  $f(x) = \\sin x$: $f(-x) = \\sin(-x) = -\\sin x = -f(x)$, άρα είναι \\textbf{περιττή}, όχι άρτια. \\textbf{Λάθος}. \\points{3}\n}\n\n\\step[Πρόταση (iii)]{%\n  $\\sin(A+B) = \\sin A \\cos B + \\cos A \\sin B \\neq \\sin A + \\sin B$ γενικά. \\textbf{Λάθος}. \\points{3}\n}\n\n\\step[Πρόταση (iv)]{%\n  Για $x\\in(0,\\pi)$ το ημίτονο είναι θετικό (1ο και 2ο τεταρτημόριο). \\textbf{Σωστό}. \\points{3}\n}\n\n\\step[Πρόταση (v)]{%\n  $\\tan\\theta = \\dfrac{\\sin\\theta}{\\cos\\theta}$ — δεν ορίζεται όταν $\\cos\\theta=0$. \\textbf{Λάθος}. \\points{3}\n}\n\n\\solq{Συμπλήρωση κενών:}{10}\n\n\\step{%\n  $\\sin(90°) = 1$ \\points{2.5} \\quad\n  $\\cos(0°) = 1$ \\points{2.5} \\quad\n  $\\tan(45°) = 1$ \\points{2.5} \\quad\n  $\\theta = 30°$ \\points{2.5}\n}\n\n% ============================================================\n\\solthema{25}{Υπολογιστικά — Εφαρμογή Τύπων}\n% ============================================================\n\n\\solq{$\\sin\\theta = \\frac{5}{13}$, $\\theta \\in \\left(\\frac{\\pi}{2}, \\pi\\right)$. Να βρεθούν $\\cos\\theta$, $\\tan\\theta$:}{12}\n\n\\step[Βήμα 1 — Εφαρμογή Πυθαγόρειας ταυτότητας:]{%\n  \\[\n    \\cos^2\\theta = 1 - \\sin^2\\theta = 1 - \\frac{25}{169} = \\frac{144}{169}\n  \\]\n  \\points{4}\n}\n\n\\step[Βήμα 2 — Πρόσημο $\\cos\\theta$:]{%\n  Επειδή $\\theta\\in\\left(\\dfrac{\\pi}{2},\\pi\\right)$ (2ο τεταρτημόριο), $\\cos\\theta < 0$.\n  \\[\n    \\cos\\theta = -\\frac{12}{13}\n  \\]\n  \\points{4}\n}\n\n\\step[Βήμα 3 — Τεφμένη:]{%\n  \\[\n    \\tan\\theta = \\frac{\\sin\\theta}{\\cos\\theta} = \\frac{\\tfrac{5}{13}}{-\\tfrac{12}{13}} = -\\frac{5}{12}\n  \\]\n  \\points{4}\n}\n\n\\result{$\\cos\\theta = -\\dfrac{12}{13}$, \\quad $\\tan\\theta = -\\dfrac{5}{12}$}\n\n\\solq{Απόδειξη $\\frac{1-\\cos^2\\theta}{\\sin\\theta} = \\sin\\theta$:}{13}\n\n\\step[Βήμα 1 — Μετασχηματισμός αριθμητή:]{%\n  Από την Πυθαγόρεια ταυτότητα: $1 - \\cos^2\\theta = \\sin^2\\theta$. \\points{5}\n}\n\n\\step[Βήμα 2 — Απλοποίηση:]{%\n  \\[\n    \\frac{1-\\cos^2\\theta}{\\sin\\theta} = \\frac{\\sin^2\\theta}{\\sin\\theta} = \\sin\\theta \\quad (\\sin\\theta \\neq 0)\n  \\]\n  \\points{8}\n}\n\n\\result{Αποδείχθηκε. $\\checkmark$}\n\n% ============================================================\n\\solthema{25}{Εξισώσεις — Ανισώσεις}\n% ============================================================\n\n\\solq{$2\\sin x - \\sqrt{3} = 0$ στο $[0,2\\pi)$:}{13}\n\n\\step[Βήμα 1]{%\n  $\\sin x = \\dfrac{\\sqrt{3}}{2}$ \\points{3}\n}\n\n\\step[Βήμα 2 — Βασική λύση:]{%\n  $x_0 = \\dfrac{\\pi}{3}$ \\points{3}\n}\n\n\\step[Βήμα 3 — Δεύτερη λύση (2ο τεταρτ.):]{%\n  $x = \\pi - \\dfrac{\\pi}{3} = \\dfrac{2\\pi}{3}$ \\points{4}\n}\n\n\\result{$x_1 = \\dfrac{\\pi}{3}$, \\quad $x_2 = \\dfrac{2\\pi}{3}$}\n\n\\solnote{Το ημίτονο είναι θετικό στο 1ο και 2ο τεταρτημόριο, γι' αυτό εξετάζουμε και τις δύο λύσεις.}\n\n\\solq{$\\cos x > \\frac{1}{2}$ στο $[0,2\\pi)$:}{12}\n\n\\step[Βήμα 1 — Εξίσωση αναφοράς:]{%\n  $\\cos x = \\dfrac{1}{2} \\Rightarrow x = \\dfrac{\\pi}{3}$ ή $x = \\dfrac{5\\pi}{3}$ \\points{4}\n}\n\n\\step[Βήμα 2 — Μελέτη ανισότητας:]{%\n  Το συνημίτονο είναι $> \\dfrac{1}{2}$ κοντά στο 0, δηλαδή για $x \\in \\left[0, \\dfrac{\\pi}{3}\\right) \\cup \\left(\\dfrac{5\\pi}{3}, 2\\pi\\right)$. \\points{8}\n}\n\n\\result{$x \\in \\left[0, \\dfrac{\\pi}{3}\\right) \\cup \\left(\\dfrac{5\\pi}{3}, 2\\pi\\right)$}\n\n% ============================================================\n\\solthema{25}{Ανώτερη Δυσκολία — Θέμα Δ}\n% ============================================================\n\n\\solq{$f(x) = 2\\sin\\!\\left(x + \\frac{\\pi}{6}\\right)$:}{10}\n\n\\step[α) Πεδίο τιμών:]{%\n  Επειδή $-1 \\leq \\sin(\\cdot) \\leq 1$, έχουμε $-2 \\leq f(x) \\leq 2$.\\\\\n  Πεδίο τιμών: $[-2, 2]$. \\points{4}\n}\n\n\\step[β) Μηδενικά στο $[0,2\\pi)$:]{%\n  $f(x)=0 \\Leftrightarrow \\sin\\!\\left(x+\\dfrac{\\pi}{6}\\right) = 0$\\\\[4pt]\n  $x + \\dfrac{\\pi}{6} = k\\pi$, $k\\in\\mathbb{Z}$\\\\[4pt]\n  $x = -\\dfrac{\\pi}{6} + k\\pi$\\\\[4pt]\n  Για $k=1$: $x = \\dfrac{5\\pi}{6}$ \\quad · \\quad Για $k=2$: $x = \\dfrac{11\\pi}{6}$\\\\[4pt]\n  \\points{6}\n}\n\n\\result{Μηδενικά: $x_1 = \\dfrac{5\\pi}{6}$, \\quad $x_2 = \\dfrac{11\\pi}{6}$}\n\n\\solq{$\\sin\\alpha + \\cos\\alpha = \\frac{1}{\\sqrt{2}}$. Να βρεθεί το $\\sin\\alpha\\cos\\alpha$ και $\\sin^3\\alpha+\\cos^3\\alpha$:}{15}\n\n\\step[Βήμα 1 — Τετραγωνισμός:]{%\n  $(\\sin\\alpha + \\cos\\alpha)^2 = \\dfrac{1}{2}$\\\\[4pt]\n  $\\sin^2\\alpha + 2\\sin\\alpha\\cos\\alpha + \\cos^2\\alpha = \\dfrac{1}{2}$\\\\[4pt]\n  $1 + 2\\sin\\alpha\\cos\\alpha = \\dfrac{1}{2}$\\\\[4pt]\n  $\\sin\\alpha\\cos\\alpha = -\\dfrac{1}{4}$ \\points{7}\n}\n\n\\step[Βήμα 2 — Κύβος αθροίσματος:]{%\n  $\\sin^3\\alpha+\\cos^3\\alpha = (\\sin\\alpha+\\cos\\alpha)(\\sin^2\\alpha - \\sin\\alpha\\cos\\alpha + \\cos^2\\alpha)$\\\\[4pt]\n  $= \\dfrac{1}{\\sqrt{2}} \\cdot \\left(1 - \\left(-\\dfrac{1}{4}\\right)\\right) = \\dfrac{1}{\\sqrt{2}} \\cdot \\dfrac{5}{4} = \\dfrac{5}{4\\sqrt{2}} = \\dfrac{5\\sqrt{2}}{8}$ \\points{8}\n}\n\n\\result{$\\sin\\alpha\\cos\\alpha = -\\dfrac{1}{4}$ \\quad και \\quad $\\sin^3\\alpha+\\cos^3\\alpha = \\dfrac{5\\sqrt{2}}{8}$}\n\n% --- Συνολικό βαθμολόγιο ---\n\\vspace{0.5cm}\n\\begin{tcolorbox}[colback=lightblue, colframe=mainblue, arc=3pt, title=\\textbf{Βαθμολόγιο}]\n  \\begin{tabular}{lcccc|c}\n    & \\textbf{Θέμα Α} & \\textbf{Θέμα Β} & \\textbf{Θέμα Γ} & \\textbf{Θέμα Δ} & \\textbf{Σύνολο}\\\\\n    \\hline\n    Μονάδες & 25 & 25 & 25 & 25 & \\textbf{100}\\\\\n  \\end{tabular}\n\\end{tcolorbox}\n\n\\end{document}\n"};
+
+const TEMPLATE_NAMES = {
+  theory:    'theory_template_B_lykeiou.tex',
+  exam:      'exam_template_B_lykeiou.tex',
+  worksheet: 'worksheet_template_B_lykeiou.tex',
+  solutions: 'solutions_template_B_lykeiou.tex',
+};
+
+function dlTemplate(key) {
+  const content = FULL_TEMPLATES[key];
+  if (!content) return;
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = TEMPLATE_NAMES[key];
+  a.click();
+}
+</script>
+
+</body>
+</html>
