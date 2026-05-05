@@ -631,15 +631,19 @@ const SUPABASE_URL_KEY = 'ck_sb_url';
 const SUPABASE_KEY_KEY = 'ck_sb_key';
 let sb = null;
 
+function sanitizeURL(url){ return (url||'').trim().replace(/\/+$/, ''); }
+
 // ===================== INIT =====================
 async function init() {
   // Load settings first so dropdowns are populated
   refreshAllSubjectDropdowns();
   refreshAllClassDropdowns();
 
-  const url = localStorage.getItem(SUPABASE_URL_KEY);
+  let url = sanitizeURL(localStorage.getItem(SUPABASE_URL_KEY));
   const key = localStorage.getItem(SUPABASE_KEY_KEY);
   if (!url || !key) { showSetup(); return; }
+  // Re-save sanitized URL in case it had trailing slash
+  localStorage.setItem(SUPABASE_URL_KEY, url);
   try {
     sb = supabase.createClient(url, key);
     await sb.from('lessons').select('id').limit(1);
@@ -652,19 +656,21 @@ function showSetup() { document.getElementById('setup-screen').style.display='bl
 function showApp()   { document.getElementById('setup-screen').style.display='none'; document.getElementById('main-app').style.display='block'; }
 
 async function connectSupabase() {
-  const url = document.getElementById('setup-url').value.trim();
+  const url = sanitizeURL(document.getElementById('setup-url').value);
   const key = document.getElementById('setup-key').value.trim();
   const err = document.getElementById('setup-error');
   if (!url || !key) { err.textContent='Συμπλήρωσε και τα δύο πεδία.'; return; }
+  if (!url.startsWith('https://')) { err.textContent='Το URL πρέπει να ξεκινά με https://'; return; }
   try {
     const client = supabase.createClient(url, key);
-    await client.from('lessons').select('id').limit(1);
+    const {error} = await client.from('lessons').select('id').limit(1);
+    if(error) throw new Error(error.message);
     localStorage.setItem(SUPABASE_URL_KEY, url);
     localStorage.setItem(SUPABASE_KEY_KEY, key);
     sb = client;
     showApp();
     await loadAll();
-  } catch(e) { err.textContent = 'Αδυναμία σύνδεσης. Έλεγξε URL και Key.'; }
+  } catch(e) { err.textContent = 'Αδυναμία σύνδεσης: ' + e.message; }
 }
 
 function copySQL() { navigator.clipboard.writeText(document.getElementById('sql-setup-code').textContent); }
