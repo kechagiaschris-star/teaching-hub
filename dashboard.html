@@ -127,9 +127,24 @@ textarea{resize:vertical;}
 .dot-pulse span:nth-child(2){animation-delay:.2s;}.dot-pulse span:nth-child(3){animation-delay:.4s;}
 @keyframes dp{0%,80%,100%{opacity:.3}40%{opacity:1}}
 
-/* ===== SCHEDULE ===== */
-.schedule-slot{display:grid;grid-template-columns:70px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #f0eeea;font-size:13px;}
-.day-header{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.05em;padding:8px 0 5px;border-bottom:1px solid var(--gray-border);margin-bottom:2px;}
+/* ===== SCHEDULE GRID ===== */
+.schedule-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:1rem;overflow-x:auto;}
+.schedule-col{min-width:110px;}
+.schedule-col-header{text-align:center;padding:8px 4px 7px;background:var(--text);color:#fff;border-radius:8px 8px 0 0;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
+.schedule-col-body{border:1px solid var(--gray-border);border-top:none;border-radius:0 0 8px 8px;min-height:60px;padding:4px;background:#fafaf8;}
+.schedule-cell{background:#dbeafe;border:1px solid #93c5fd;border-radius:6px;padding:6px 7px;margin-bottom:4px;font-size:12px;position:relative;transition:all .15s;}
+.schedule-cell:hover{background:#bfdbfe;}
+.schedule-cell.private{background:#ede9fe;border-color:#c4b5fd;}
+.schedule-cell.private:hover{background:#c4b5fd;}
+.schedule-cell-time{font-size:10px;font-weight:700;color:#1e40af;margin-bottom:2px;letter-spacing:.02em;}
+.schedule-cell.private .schedule-cell-time{color:#5b21b6;}
+.schedule-cell-name{font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.schedule-cell-detail{font-size:10px;color:#555;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.schedule-cell-actions{display:none;gap:2px;margin-top:5px;}
+.schedule-cell:hover .schedule-cell-actions{display:flex;}
+.schedule-legend{display:flex;gap:12px;font-size:11px;color:var(--gray);margin-bottom:1rem;flex-wrap:wrap;}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+@media(max-width:680px){.schedule-grid{grid-template-columns:repeat(5,minmax(90px,1fr));}.schedule-col:nth-child(6),.schedule-col:nth-child(7){display:none;}}
 
 /* ===== HW ===== */
 .hw-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #f0eeea;font-size:13px;}
@@ -219,10 +234,14 @@ create table if not exists homework (
   priority text, deadline text, done boolean default false,
   created_at timestamptz default now()
 );
--- Enable Row Level Security (public access for single user)
+-- RLS
 alter table lessons enable row level security;
 alter table schedule enable row level security;
 alter table homework enable row level security;
+-- Policies (drop first to avoid duplicate errors)
+drop policy if exists "public_all" on lessons;
+drop policy if exists "public_all" on schedule;
+drop policy if exists "public_all" on homework;
 create policy "public_all" on lessons for all using (true) with check (true);
 create policy "public_all" on schedule for all using (true) with check (true);
 create policy "public_all" on homework for all using (true) with check (true);</div>
@@ -735,9 +754,16 @@ async function insertSchedule(d) {
 }
 async function deleteSchedule(id) { if(!confirm('Διαγραφή ώρας;'))return; await sb.from('schedule').delete().eq('id',id); schedule=schedule.filter(s=>s.id!==id); renderSchedule(); }
 async function insertHW(d) {
+  console.log('insertHW payload:', JSON.stringify(d));
   const {data,error} = await sb.from('homework').insert(d).select();
-  if(!error && data){ homework.unshift(data[0]); }
-  return !error;
+  console.log('insertHW result:', {data, error});
+  if(error){
+    console.error('insertHW error:', error.message, error.details, error.hint);
+    alert('Σφάλμα εργασίας: ' + error.message + (error.hint?'\n'+error.hint:''));
+    return false;
+  }
+  if(data && data[0]) homework.unshift(data[0]);
+  return true;
 }
 async function toggleHWDone(id) { const h=homework.find(x=>x.id===id); if(!h)return; const v=!h.done; await sb.from('homework').update({done:v}).eq('id',id); h.done=v; renderHomework(); updateHWDot(); }
 async function deleteHW(id) { await sb.from('homework').delete().eq('id',id); homework=homework.filter(h=>h.id!==id); renderHomework(); updateHWDot(); }
@@ -919,10 +945,37 @@ async function saveScheduleSlot(){
 }
 function renderSchedule(){
   const v=document.getElementById('schedule-view'); if(!v)return;
-  if(!schedule.length){v.innerHTML='<div class="card" style="text-align:center;font-size:13px;color:#aaa;padding:2rem;">Δεν υπάρχουν ώρες ακόμα.</div>';return;}
-  const byDay={};schedule.forEach(s=>{if(!byDay[s.day])byDay[s.day]=[];byDay[s.day].push(s);});
-  [1,2,3,4,5,6,0].filter(d=>byDay[d]).forEach(d=>byDay[d].sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||'')));
-  v.innerHTML=[1,2,3,4,5,6,0].filter(d=>byDay[d]).map(d=>`<div class="card" style="margin-bottom:.75rem;"><div class="day-header">${DAYS[d]}</div>${byDay[d].map(s=>`<div class="schedule-slot"><div style="font-weight:500;color:#666;">${s.start_time||''}</div><div><div style="font-weight:500;">${s.student}</div><div style="font-size:12px;color:#999;">${s.subject||''} · ${s.duration||0}λεπτά · €${s.fee||0} · ${s.type==='private'?'Ιδιαίτερο':'Φροντιστήριο'}</div></div><div style="display:flex;gap:4px;"><button class="btn sm" onclick="openScheduleModal(${s.id})">✏️</button><button class="btn sm danger-btn" onclick="deleteSchedule(${s.id})">🗑</button></div></div>`).join('')}</div>`).join('');
+  if(!schedule.length){
+    v.innerHTML='<div class="card" style="text-align:center;font-size:13px;color:#aaa;padding:2rem;">Δεν υπάρχουν ώρες ακόμα. Πρόσθεσε το σταθερό σου εβδομαδιαίο πρόγραμμα.</div>';
+    return;
+  }
+  const DAY_LABELS=['Κυρ','Δευτ','Τρίτ','Τετ','Πέμπ','Παρ','Σάβ'];
+  const DAY_ORDER=[1,2,3,4,5,6,0];
+  const byDay={};
+  schedule.forEach(s=>{ if(!byDay[s.day])byDay[s.day]=[]; byDay[s.day].push(s); });
+  DAY_ORDER.forEach(d=>{ if(byDay[d]) byDay[d].sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||'')); });
+  const cols=DAY_ORDER.map(d=>{
+    const slots=byDay[d]||[];
+    const cells=slots.map(s=>`<div class="schedule-cell ${s.type==='private'?'private':''}">
+      <div class="schedule-cell-time">${s.start_time||''}</div>
+      <div class="schedule-cell-name" title="${s.student}">${s.student}</div>
+      <div class="schedule-cell-detail">${s.subject||''} · ${s.duration||0}' · €${s.fee||0}</div>
+      <div class="schedule-cell-actions">
+        <button class="btn sm" style="padding:2px 6px;font-size:10px;" onclick="openScheduleModal(${s.id})">✏️</button>
+        <button class="btn sm danger-btn" style="padding:2px 6px;font-size:10px;" onclick="deleteSchedule(${s.id})">🗑</button>
+      </div></div>`).join('');
+    return `<div class="schedule-col">
+      <div class="schedule-col-header">${DAY_LABELS[d]}</div>
+      <div class="schedule-col-body">${cells||'<div style="text-align:center;padding:10px 0;font-size:10px;color:#ccc;">—</div>'}</div>
+    </div>`;
+  }).join('');
+  const totalH=(schedule.reduce((s,x)=>s+(x.duration||0),0)/60).toFixed(1);
+  const totalF=schedule.reduce((s,x)=>s+Number(x.fee||0),0).toFixed(0);
+  v.innerHTML=`<div class="schedule-legend">
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:3px;background:#93c5fd;display:inline-block;"></span>Φροντιστήριο</span>
+    <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:3px;background:#c4b5fd;display:inline-block;"></span>Ιδιαίτερο</span>
+    <span style="margin-left:auto;">${schedule.length} ώρες/εβδ · ${totalH}h · €${totalF}/εβδ</span>
+  </div><div class="schedule-grid">${cols}</div>`;
 }
 function getTodaySlots(){const d=new Date().getDay();return schedule.filter(s=>s.day===d).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));}
 
@@ -1272,11 +1325,20 @@ function getAPIEndpoint(){
 }
 
 async function aiFetch(body){
-  const endpoint=getAPIEndpoint();
-  const headers={'Content-Type':'application/json'};
-  // Direct Anthropic API needs auth header — proxy handles it server-side
-  const r=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify(body)});
-  if(!r.ok){const err=await r.json().catch(()=>({}));throw new Error(err?.error?.message||'HTTP '+r.status);}
+  const proxy = localStorage.getItem('ck_proxy_url');
+  if(!proxy){
+    throw new Error('Χρειάζεται Cloudflare Worker proxy. Πήγαινε Ρυθμίσεις → AI Proxy URL.');
+  }
+  const endpoint = proxy.replace(/\/+$/,'');
+  const r = await fetch(endpoint, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  if(!r.ok){
+    const err = await r.json().catch(()=>({}));
+    throw new Error(err?.error?.message || 'HTTP ' + r.status);
+  }
   return r.json();
 }
 
