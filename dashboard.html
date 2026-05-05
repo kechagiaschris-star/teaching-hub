@@ -700,10 +700,17 @@ async function updateLesson(id,d) { setSyncing('sync'); const {error}=await sb.f
 async function deleteLesson(id) { if(!confirm('Διαγραφή;'))return; setSyncing('sync'); await sb.from('lessons').delete().eq('id',id); lessons=lessons.filter(l=>l.id!==id); setSyncing('ok'); renderAll(); }
 async function insertSchedule(d) {
   setSyncing('sync');
+  console.log('insertSchedule — payload:', JSON.stringify(d));
   const {data,error} = await sb.from('schedule').insert(d).select();
+  console.log('insertSchedule — response:', {data, error});
   setSyncing(error?'error':'ok');
-  if(!error && data){ schedule.push(data[0]); }
-  return !error;
+  if(error){
+    console.error('Supabase error:', error.message, error.details, error.hint);
+    alert('Supabase error: ' + error.message + (error.hint ? '\nHint: '+error.hint : ''));
+    return false;
+  }
+  if(data) schedule.push(data[0]);
+  return true;
 }
 async function deleteSchedule(id) { if(!confirm('Διαγραφή ώρας;'))return; await sb.from('schedule').delete().eq('id',id); schedule=schedule.filter(s=>s.id!==id); renderSchedule(); }
 async function insertHW(d) {
@@ -861,12 +868,7 @@ async function saveScheduleSlot(){
   };
   closeScheduleModal();
   const ok = await insertSchedule(slot);
-  if(ok){
-    renderSchedule();
-    renderOverview();
-  } else {
-    alert('Σφάλμα αποθήκευσης. Έλεγξε τη σύνδεση Supabase.');
-  }
+  if(ok){ renderSchedule(); renderOverview(); }
 }
 function renderSchedule(){
   const v=document.getElementById('schedule-view'); if(!v)return;
