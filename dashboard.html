@@ -504,6 +504,20 @@ create policy "public_all" on homework for all using (true) with check (true);</
           <button class="btn primary" onclick="saveDefaults()">Αποθήκευση προεπιλογών</button>
         </div>
 
+        <!-- AI Proxy -->
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="section-title">AI Proxy URL (για Netlify)</div>
+          <div style="font-size:12px;color:#999;margin-bottom:10px;">
+            Για να λειτουργούν τα AI features (LaTeX, φωνητική, insights) από το Netlify,
+            χρειάζεσαι ένα Cloudflare Worker. Δες το αρχείο <code>cloudflare_worker.js</code> για οδηγίες (5 λεπτά setup, δωρεάν).
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="proxy-url-input" placeholder="https://teaching-proxy.YOUR-NAME.workers.dev" style="flex:1;">
+            <button class="btn primary sm" onclick="saveProxyURL()">Αποθήκευση</button>
+          </div>
+          <div id="proxy-status" style="font-size:12px;margin-top:6px;color:#999;"></div>
+        </div>
+
         <!-- Supabase reconnect -->
         <div class="card" style="background:#fff8f6;border-color:#fca5a5;">
           <div class="section-title" style="color:#991b1b;">Επανασύνδεση Supabase</div>
@@ -575,7 +589,8 @@ create policy "public_all" on homework for all using (true) with check (true);</
 <!-- Schedule -->
 <div class="modal-overlay" id="modal-schedule" onclick="if(event.target===this)closeScheduleModal()">
   <div class="modal">
-    <h2>Προσθήκη σταθερής ώρας</h2>
+    <h2 id="schedule-modal-title">Προσθήκη σταθερής ώρας</h2>
+    <input type="hidden" id="sc-edit-id" value="">
     <div class="form-row">
       <div class="form-group"><label>Μαθητής / Τμήμα</label><input type="text" id="sc-student" list="stu-dl"><datalist id="class-dl"></datalist></div>
       <div class="form-group"><label>Ημέρα</label><select id="sc-day"><option value="1">Δευτέρα</option><option value="2">Τρίτη</option><option value="3">Τετάρτη</option><option value="4">Πέμπτη</option><option value="5">Παρασκευή</option><option value="6">Σάββατο</option><option value="0">Κυριακή</option></select></div>
@@ -849,20 +864,37 @@ async function saveLesson(){
 }
 
 // ===================== SCHEDULE =====================
-function openScheduleModal(){
+function openScheduleModal(editId){
   updateStudentDatalist();
   refreshAllSubjectDropdowns();
   refreshAllClassDropdowns();
-  // Apply defaults
-  const defs=getDefaults();
-  document.getElementById('sc-fee').value=defs.feePrivate;
-  document.getElementById('sc-duration').value=defs.durPrivate;
+  document.getElementById('sc-edit-id').value = editId || '';
+  if(editId){
+    const s = schedule.find(x=>x.id===editId);
+    if(!s) return;
+    document.getElementById('schedule-modal-title').textContent = 'Επεξεργασία ώρας';
+    document.getElementById('sc-student').value  = s.student||'';
+    document.getElementById('sc-day').value      = s.day;
+    document.getElementById('sc-start').value    = s.start_time||'';
+    document.getElementById('sc-duration').value = s.duration||60;
+    document.getElementById('sc-subject').value  = s.subject||'';
+    document.getElementById('sc-fee').value      = s.fee||0;
+    document.getElementById('sc-type').value     = s.type||'private';
+  } else {
+    document.getElementById('schedule-modal-title').textContent = 'Προσθήκη σταθερής ώρας';
+    document.getElementById('sc-student').value = '';
+    const defs = getDefaults();
+    document.getElementById('sc-fee').value      = defs.feePrivate;
+    document.getElementById('sc-duration').value = defs.durPrivate;
+    document.getElementById('sc-start').value    = '16:00';
+  }
   document.getElementById('modal-schedule').classList.add('open');
 }
 function closeScheduleModal(){ document.getElementById('modal-schedule').classList.remove('open'); }
 async function saveScheduleSlot(){
   const student = document.getElementById('sc-student').value.trim();
   if(!student){ alert('Συμπλήρωσε μαθητή.'); return; }
+  const editId = parseInt(document.getElementById('sc-edit-id').value)||0;
   const slot = {
     student,
     day:        parseInt(document.getElementById('sc-day').value),
@@ -873,15 +905,24 @@ async function saveScheduleSlot(){
     type:       document.getElementById('sc-type').value
   };
   closeScheduleModal();
-  const ok = await insertSchedule(slot);
-  if(ok){ renderSchedule(); renderOverview(); }
+  if(editId){
+    setSyncing('sync');
+    const {error} = await sb.from('schedule').update(slot).eq('id', editId);
+    setSyncing(error?'error':'ok');
+    if(!error){ const i=schedule.findIndex(s=>s.id===editId); if(i>-1) schedule[i]={...schedule[i],...slot}; }
+    else { alert('Σφάλμα ενημέρωσης: '+error.message); return; }
+  } else {
+    const ok = await insertSchedule(slot);
+    if(!ok) return;
+  }
+  renderSchedule(); renderOverview();
 }
 function renderSchedule(){
   const v=document.getElementById('schedule-view'); if(!v)return;
   if(!schedule.length){v.innerHTML='<div class="card" style="text-align:center;font-size:13px;color:#aaa;padding:2rem;">Δεν υπάρχουν ώρες ακόμα.</div>';return;}
   const byDay={};schedule.forEach(s=>{if(!byDay[s.day])byDay[s.day]=[];byDay[s.day].push(s);});
   [1,2,3,4,5,6,0].filter(d=>byDay[d]).forEach(d=>byDay[d].sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||'')));
-  v.innerHTML=[1,2,3,4,5,6,0].filter(d=>byDay[d]).map(d=>`<div class="card" style="margin-bottom:.75rem;"><div class="day-header">${DAYS[d]}</div>${byDay[d].map(s=>`<div class="schedule-slot"><div style="font-weight:500;color:#666;">${s.start_time||''}</div><div><div style="font-weight:500;">${s.student}</div><div style="font-size:12px;color:#999;">${s.subject||''} · ${s.duration||0}λεπτά · €${s.fee||0}</div></div><button class="btn sm danger-btn" onclick="deleteSchedule(${s.id})">🗑</button></div>`).join('')}</div>`).join('');
+  v.innerHTML=[1,2,3,4,5,6,0].filter(d=>byDay[d]).map(d=>`<div class="card" style="margin-bottom:.75rem;"><div class="day-header">${DAYS[d]}</div>${byDay[d].map(s=>`<div class="schedule-slot"><div style="font-weight:500;color:#666;">${s.start_time||''}</div><div><div style="font-weight:500;">${s.student}</div><div style="font-size:12px;color:#999;">${s.subject||''} · ${s.duration||0}λεπτά · €${s.fee||0} · ${s.type==='private'?'Ιδιαίτερο':'Φροντιστήριο'}</div></div><div style="display:flex;gap:4px;"><button class="btn sm" onclick="openScheduleModal(${s.id})">✏️</button><button class="btn sm danger-btn" onclick="deleteSchedule(${s.id})">🗑</button></div></div>`).join('')}</div>`).join('');
 }
 function getTodaySlots(){const d=new Date().getDay();return schedule.filter(s=>s.day===d).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));}
 
@@ -1017,8 +1058,12 @@ async function parseVoiceAI(text){
 Γνωστοί μαθητές: ${stus||'κανείς'}
 Εντολή: "${text}"
 Κανόνες: payment="paid" αν λέει πλήρωσε/πληρώθηκε. type="class" αν φροντιστήριο/τμήμα. duration=λεπτά ως int. fee=ευρώ ως float. ΜΟΝΟ JSON.`;
-  try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,messages:[{role:'user',content:prompt}]})});const d=await r.json();const raw=d.content?.map(b=>b.text||'').join('')||'{}';parsedVoice=JSON.parse(raw.replace(/```json|```/g,'').trim());showParsedVoice(parsedVoice);}
-  catch(e){document.getElementById('voice-parsed').innerHTML='<div style="font-size:13px;color:var(--red);">Αδυναμία ανάλυσης.</div>';}
+  try{
+    const d=await aiFetch({model:'claude-sonnet-4-20250514',max_tokens:300,messages:[{role:'user',content:prompt}]});
+    const raw=d.content?.map(b=>b.text||'').join('')||'{}';
+    parsedVoice=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    showParsedVoice(parsedVoice);
+  }catch(e){document.getElementById('voice-parsed').innerHTML='<div style="font-size:13px;color:var(--red);">Αδυναμία ανάλυσης: '+e.message+'</div>';}
 }
 function showParsedVoice(d){
   document.getElementById('voice-parsed').innerHTML=`<div style="background:#f0f8ea;border:1px solid #a7f3d0;border-radius:8px;padding:10px;font-size:13px;margin-bottom:8px;"><div style="font-weight:600;color:var(--green);margin-bottom:6px;">✓ Αναγνωρίστηκε:</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div>👤 <strong>${d.student||'—'}</strong></div><div>📅 ${d.date}</div><div>📚 ${d.subject||'—'}${d.topic?' · '+d.topic:''}</div><div>⏱ ${d.duration||0}λεπτά · €${d.fee||0}</div><div>${d.payment==='paid'?'✅ Πλ/θηκε':'❌ Ανεξόφλητο'}</div><div>${d.type==='class'?'🏫 Φροντ.':'👤 Ιδιαίτερο'}</div>${d.notes?'<div style="grid-column:1/-1;color:#555;">📝 '+d.notes+'</div>':''}</div></div>`;
@@ -1104,13 +1149,12 @@ ${input.slice(0,4000)}
 
 Παράγε ΜΟΝΟ τον LaTeX κώδικα από \\begin{document} έως \\end{document}. Χωρίς preamble. Τα ελληνικά γράφονται απευθείας. Μαθηματικοί τύποι: $...$ ή \\[...\\]. ΜΟΝΟ κώδικας.`;
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:prompt}]})});
-    const d=await r.json();
+    const d=await aiFetch({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:prompt}]});
     let text=d.content?.map(b=>b.text||'').join('')||'';
     text=text.replace(/^```(?:latex|tex)?\n?/,'').replace(/\n?```$/,'').trim();
     out.value=text;
     st.textContent='✅ '+text.split('\n').length+' γραμμές LaTeX — Αντίγραψε στο Overleaf για compile.';
-  }catch(e){st.textContent='❌ Σφάλμα σύνδεσης.';}
+  }catch(e){st.textContent='❌ '+e.message+' — Πρόσθεσε Proxy URL στις Ρυθμίσεις.';}
 }
 
 function copyLatex(){const t=document.getElementById('latex-output').value;if(!t)return;navigator.clipboard.writeText(t).then(()=>{document.getElementById('latex-status').textContent='✅ Αντιγράφηκε!';setTimeout(()=>document.getElementById('latex-status').textContent='',2000);});}
@@ -1127,10 +1171,10 @@ async function runAI(){
   const owed=lessons.filter(l=>l.payment==='unpaid').reduce((s,l)=>s+Number(l.fee||0),0);
   const prompt=`Είσαι βοηθός διδασκαλίας για τον Χρήστο Κεχαγιά, καθηγητή μαθηματικών Β΄ Λυκείου Θεσσαλονίκη.\nΔεδομένα:\n${sum||'Κανένα μάθημα.'}\nΕισπράχθηκαν €${paid.toFixed(0)}, Εκκρεμείς €${owed.toFixed(0)}.\nΕρώτηση: "${q}"\nΑπάντησε σε 150-200 λέξεις, συγκεκριμένα, κατονόμαζε μαθητές και θέματα. Χρησιμοποίησε → για actions. Γλώσσα: ελληνικά.`;
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
-    const d=await r.json();const text=d.content?.map(b=>b.text||'').join('\n')||'';
+    const d=await aiFetch({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]});
+    const text=d.content?.map(b=>b.text||'').join('\n')||'';
     out.innerHTML=`<div class="card"><div style="font-size:11px;color:#aaa;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;">AI · ${new Date().toLocaleDateString('el-GR')}</div><div style="font-size:13px;line-height:1.8;">${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/→/g,'<br>→').replace(/\n/g,'<br>')}</div></div>`;
-  }catch(e){out.innerHTML='<div class="card" style="font-size:13px;color:#aaa;">Σφάλμα σύνδεσης.</div>';}
+  }catch(e){out.innerHTML=`<div class="card" style="font-size:13px;color:#aaa;">❌ ${e.message} — Πρόσθεσε Proxy URL στις Ρυθμίσεις.</div>`;}
 }
 
 // ===================== AUTO CHECK-IN =====================
@@ -1213,6 +1257,27 @@ function refreshAllClassDropdowns(){
   // Update class datalists
   const dl=document.getElementById('class-dl');
   if(dl) dl.innerHTML=classes.map(c=>`<option value="${c}">`).join('');
+}
+
+function saveProxyURL(){
+  const url=(document.getElementById('proxy-url-input').value||'').trim().replace(/\/+$/,'');
+  if(!url){localStorage.removeItem('ck_proxy_url');document.getElementById('proxy-status').textContent='Αφαιρέθηκε.';return;}
+  localStorage.setItem('ck_proxy_url',url);
+  document.getElementById('proxy-status').innerHTML='✅ Αποθηκεύτηκε: <code>'+url+'</code>';
+}
+
+function getAPIEndpoint(){
+  const proxy=localStorage.getItem('ck_proxy_url');
+  return proxy || 'https://api.anthropic.com/v1/messages';
+}
+
+async function aiFetch(body){
+  const endpoint=getAPIEndpoint();
+  const headers={'Content-Type':'application/json'};
+  // Direct Anthropic API needs auth header — proxy handles it server-side
+  const r=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify(body)});
+  if(!r.ok){const err=await r.json().catch(()=>({}));throw new Error(err?.error?.message||'HTTP '+r.status);}
+  return r.json();
 }
 
 function resetSupabase(){
