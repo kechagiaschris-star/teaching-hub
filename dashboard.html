@@ -921,7 +921,7 @@ create policy "public_all" on homework for all using (true) with check (true);</
   </div>
 </div
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+<!-- Supabase SDK removed — using direct REST API -->
 <!-- PDF.js for PDF reading -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <!-- Mammoth for Word .docx reading -->
@@ -938,18 +938,73 @@ let sb = null;
 // Supabase SDK v2 exposes createClient at window.supabase.createClient
 // Handle both CDN formats
 function createSupabaseClient(url, key) {
-  if (window.supabase && window.supabase.createClient) {
-    return window.createSupabaseClient(url, key);
+  const baseUrl = url.replace(/\/+$/, '');
+  const hdrs = {
+    'apikey': key,
+    'Authorization': 'Bearer ' + key,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+
+  function makeQuery(table) {
+    const filters = [];
+    let selectCols = '*', orderStr = null, limitN = null;
+
+    async function buildUrl() {
+      let u = `${baseUrl}/rest/v1/${table}?select=${selectCols}`;
+      if (orderStr) u += `&order=${orderStr}`;
+      if (limitN)   u += `&limit=${limitN}`;
+      filters.forEach(f => u += '&' + f);
+      return u;
+    }
+
+    const q = {
+      select(c)      { selectCols = c || '*'; return q; },
+      order(c, o)    { orderStr = c + '.' + (o?.ascending === false ? 'desc' : 'asc'); return q; },
+      limit(n)       { limitN = n; return q; },
+      eq(col, val)   { filters.push(col + '=eq.' + encodeURIComponent(val)); return q; },
+
+      then(res, rej) {
+        buildUrl().then(u =>
+          fetch(u, { headers: hdrs })
+            .then(r => r.json().then(d => r.ok ? res({ data: d, error: null }) : res({ data: null, error: d })))
+        ).catch(rej);
+      },
+
+      async insert(rows) {
+        const body = Array.isArray(rows) ? rows : [rows];
+        const r = await fetch(`${baseUrl}/rest/v1/${table}`, {
+          method: 'POST', headers: hdrs, body: JSON.stringify(body)
+        });
+        const d = await r.json();
+        if (!r.ok) return { data: null, error: d };
+        return { data: Array.isArray(d) ? d : [d], error: null };
+      },
+
+      async update(obj) {
+        const u = await buildUrl();
+        const r = await fetch(u, {
+          method: 'PATCH',
+          headers: { ...hdrs, Prefer: 'return=representation' },
+          body: JSON.stringify(obj)
+        });
+        const d = await r.json();
+        return r.ok ? { data: d, error: null } : { data: null, error: d };
+      },
+
+      async delete() {
+        const u = await buildUrl();
+        const r = await fetch(u, { method: 'DELETE', headers: hdrs });
+        if (!r.ok) { const e = await r.json(); return { error: e }; }
+        return { error: null };
+      }
+    };
+    return q;
   }
-  if (window.supabaseJs && window.supabaseJs.createClient) {
-    return window.supabaseJs.createClient(url, key);
-  }
-  // Try destructured global
-  if (typeof createClient !== 'undefined') {
-    return createClient(url, key);
-  }
-  throw new Error('Supabase SDK not loaded. Έλεγξε τη σύνδεση internet.');
+
+  return { from: t => makeQuery(t) };
 }
+
 
 function sanitizeURL(url){ return (url||'').trim().replace(/\/+$/, ''); }
 
