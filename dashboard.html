@@ -3,9 +3,868 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Κεχαγιάς — Teaching Hub</title>
+<title>Teaching Hub — Χρήστος Κεχαγιάς</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root {
+  --ink:       #111110;
+  --ink-2:     #2c2c2a;
+  --ink-3:     #525250;
+  --rule:      #e2e0da;
+  --rule-2:    #edecea;
+  --surface:   #faf9f6;
+  --paper:     #ffffff;
+  --accent:    #b5460f;
+  --accent-bg: #fdf2ed;
+  --green:     #1c6b3a;
+  --green-bg:  #edf7f1;
+  --amber:     #8a5a00;
+  --amber-bg:  #fdf8ec;
+  --blue:      #1a4480;
+  --blue-bg:   #eef3fb;
+  --red:       #9b1c1c;
+  --red-bg:    #fef2f2;
+  --sans:      'Geist', 'DM Sans', system-ui, sans-serif;
+  --serif:     'Playfair Display', Georgia, serif;
+  --mono:      'Geist Mono', 'JetBrains Mono', monospace;
+  --r-sm:      6px;
+  --r-md:      10px;
+  --r-lg:      14px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+}
 
-<!-- Supabase -->
+/* ── RESET ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; -webkit-font-smoothing: antialiased; }
+body { font-family: var(--sans); background: var(--surface); color: var(--ink); min-height: 100vh; line-height: 1.5; }
+
+/* ── TOPNAV ── */
+.topnav {
+  height: 56px;
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.topnav-brand { display: flex; flex-direction: column; }
+.topnav-name  { font-family: var(--serif); font-size: 15px; font-style: italic; color: #fff; letter-spacing: .01em; line-height: 1.2; }
+.topnav-role  { font-family: var(--mono); font-size: 10px; color: rgba(255,255,255,.35); letter-spacing: .08em; text-transform: uppercase; }
+.topnav-right { display: flex; align-items: center; gap: 10px; }
+.sync-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 20px;
+  background: rgba(255,255,255,.07);
+  font-family: var(--mono); font-size: 10px; color: rgba(255,255,255,.4);
+  letter-spacing: .05em; text-transform: uppercase;
+}
+.sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; flex-shrink: 0; }
+.sync-dot.syncing { background: #facc15; animation: blink .9s ease infinite; }
+.sync-dot.error   { background: #f87171; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+/* ── TAB BAR ── */
+.tabbar {
+  background: var(--ink);
+  display: flex;
+  padding: 0 1.5rem;
+  border-top: 1px solid rgba(255,255,255,.06);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabbar::-webkit-scrollbar { display: none; }
+.tabbar-btn {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(255,255,255,.4);
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .15s, border-color .15s;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 5px;
+}
+.tabbar-btn:hover  { color: rgba(255,255,255,.7); }
+.tabbar-btn.active { color: #fff; border-bottom-color: #fff; }
+
+/* ── MAIN CONTENT ── */
+.content { max-width: 1020px; margin: 0 auto; padding: 1.75rem 1.5rem; }
+.panel   { display: none; }
+.panel.active { display: block; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1rem;
+}
+.card-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title::after { content: ''; flex: 1; height: 1px; background: var(--rule-2); }
+
+/* ── METRICS ── */
+.metrics-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 1.5rem; }
+.metric-card  {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+.metric-label { font-family: var(--mono); font-size: 9.5px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; }
+.metric-value { font-family: var(--serif); font-size: 26px; font-weight: 500; line-height: 1; color: var(--ink); }
+.metric-value.pos { color: var(--green); }
+.metric-value.neg { color: var(--red); }
+.metric-value.warn{ color: var(--amber);}
+.metric-sub   { font-size: 11px; color: var(--ink-3); margin-top: 5px; }
+
+/* ── TWO COL ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 16px;
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background .12s, border-color .12s, box-shadow .12s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--surface); }
+.btn:active { transform: translateY(1px); }
+.btn.primary {
+  background: var(--ink); color: #fff; border-color: var(--ink);
+}
+.btn.primary:hover { background: var(--ink-2); }
+.btn.danger {
+  background: var(--red-bg); color: var(--red); border-color: #fecaca;
+}
+.btn.danger:hover { background: #fecaca; }
+.btn.sm { padding: 5px 10px; font-size: 12px; }
+.btn.xs { padding: 3px 7px; font-size: 11px; }
+.btn.full { width: 100%; }
+.btn.mic {
+  width: 36px; height: 36px; padding: 0;
+  border-radius: 50%; background: var(--ink); color: #fff; border: none;
+  font-size: 15px; flex-shrink: 0;
+}
+.btn.mic.recording { background: #dc2626; animation: pulse-r .9s ease infinite; }
+@keyframes pulse-r { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.3)} 50%{box-shadow:0 0 0 7px rgba(220,38,38,0)} }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 20px;
+  font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+}
+.badge.paid    { background: var(--green-bg); color: var(--green); }
+.badge.unpaid  { background: var(--red-bg);   color: var(--red);   }
+.badge.partial { background: var(--amber-bg); color: var(--amber); }
+.badge.neutral { background: var(--surface);  color: var(--ink-3); border: 1px solid var(--rule); }
+
+/* ── FORMS ── */
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+input, select, textarea {
+  width: 100%;
+  padding: 8px 11px;
+  font-family: var(--sans); font-size: 13px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  transition: border-color .15s, box-shadow .15s;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--ink-3);
+  box-shadow: 0 0 0 3px rgba(17,17,16,.06);
+}
+textarea { resize: vertical; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+
+/* ── LESSON TABLE ── */
+.table-header {
+  display: grid;
+  grid-template-columns: 2.5fr 1.5fr .7fr .8fr 1fr 72px;
+  gap: 8px;
+  padding: 0 0 9px;
+  border-bottom: 1.5px solid var(--rule);
+  font-family: var(--mono); font-size: 9.5px; font-weight: 500;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+}
+.table-row {
+  display: grid;
+  grid-template-columns: 2.5fr 1.5fr .7fr .8fr 1fr 72px;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule-2);
+  font-size: 13px;
+  transition: background .1s;
+}
+.table-row:last-child { border-bottom: none; }
+.table-row:hover { background: var(--surface); margin: 0 -1rem; padding: 10px 1rem; border-radius: var(--r-sm); }
+
+/* ── INSIGHT STRIPS ── */
+.insight { border-left: 2.5px solid; padding: 10px 14px; border-radius: 0 var(--r-sm) var(--r-sm) 0; margin-bottom: 8px; }
+.insight.weak { border-color: var(--accent); background: var(--accent-bg); }
+.insight.ops  { border-color: var(--amber);  background: var(--amber-bg); }
+.insight.pos  { border-color: var(--green);  background: var(--green-bg); }
+.insight-label { font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+.insight-label.weak { color: var(--accent); }
+.insight-label.ops  { color: var(--amber);  }
+.insight-label.pos  { color: var(--green);  }
+.insight-body  { font-size: 12.5px; color: var(--ink-2); line-height: 1.55; }
+.insight-action{ font-size: 11px; color: var(--ink-3); margin-top: 5px; padding-top: 5px; border-top: 1px solid rgba(0,0,0,.05); }
+
+/* ── SCHEDULE GRID ── */
+.sched-grid {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.sched-col {}
+.sched-col-head {
+  text-align: center;
+  padding: 7px 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--rule-2);
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  border: 1px solid var(--rule);
+  border-bottom: none;
+}
+.sched-col-head.today {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.sched-col-body {
+  border: 1px solid var(--rule);
+  border-top: none;
+  border-radius: 0 0 var(--r-sm) var(--r-sm);
+  min-height: 70px;
+  padding: 5px;
+  background: var(--paper);
+}
+.sched-cell {
+  border-radius: var(--r-sm);
+  padding: 7px 8px;
+  margin-bottom: 4px;
+  font-size: 11.5px;
+  cursor: pointer;
+  position: relative;
+  transition: filter .12s;
+  border: 1px solid;
+}
+.sched-cell:hover { filter: brightness(.96); }
+.sched-cell.cls   { background: #dbeafe; border-color: #93c5fd; }
+.sched-cell.prv   { background: #ede9fe; border-color: #c4b5fd; }
+.sched-cell-time  { font-family: var(--mono); font-size: 9.5px; font-weight: 600; opacity: .7; margin-bottom: 2px; }
+.sched-cell-name  { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sched-cell-sub   { font-size: 10px; opacity: .65; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.sched-cell-act   { display: none; gap: 3px; margin-top: 5px; }
+.sched-cell:hover .sched-cell-act { display: flex; }
+.sched-legend { display: flex; gap: 14px; font-size: 11px; color: var(--ink-3); margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+.sched-legend span { display: flex; align-items: center; gap: 5px; }
+.dot { width: 9px; height: 9px; border-radius: 3px; }
+.sched-summary { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--ink-3); }
+
+/* ── HW ── */
+.hw-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--rule-2); }
+.hw-item:last-child { border-bottom: none; }
+.hw-check {
+  width: 18px; height: 18px; border-radius: 5px;
+  border: 1.5px solid var(--rule); cursor: pointer; flex-shrink: 0; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; transition: all .12s;
+}
+.hw-check.done { background: var(--green); border-color: var(--green); color: #fff; }
+.hw-desc { font-size: 13px; font-weight: 500; flex: 1; }
+.hw-desc.done { text-decoration: line-through; color: var(--ink-3); }
+.hw-meta { font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-top: 2px; }
+.priority-high { color: var(--accent); }
+.priority-med  { color: var(--amber);  }
+.priority-low  { color: var(--green);  }
+
+/* ── MODALS ── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(17,17,16,.45);
+  backdrop-filter: blur(3px);
+  z-index: 200;
+  align-items: flex-start; justify-content: center;
+  padding: 3rem 1rem; overflow-y: auto;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 1.75rem;
+  width: 560px; max-width: 100%;
+  box-shadow: var(--shadow-md);
+  margin: auto;
+  animation: modalIn .2s ease;
+}
+@keyframes modalIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:none} }
+.modal-title { font-family: var(--serif); font-size: 20px; font-weight: 400; margin-bottom: 1.5rem; color: var(--ink); }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--rule-2); }
+
+/* ── VOICE ── */
+.voice-box {
+  background: var(--ink); border-radius: var(--r-md);
+  padding: 1rem 1.25rem; color: #fff; margin-bottom: 1rem;
+}
+.voice-transcript {
+  background: rgba(255,255,255,.07); border-radius: var(--r-sm);
+  padding: 10px 12px; font-size: 13px; color: rgba(255,255,255,.75);
+  min-height: 52px; margin-top: 10px; line-height: 1.65;
+  font-style: italic;
+}
+.voice-row { display: flex; align-items: center; gap: 10px; }
+.voice-status { font-size: 12px; color: rgba(255,255,255,.45); }
+
+/* ── PARSED VOICE CARD ── */
+.parsed-card {
+  background: var(--green-bg);
+  border: 1px solid #a7f3d0;
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  font-size: 12.5px;
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.parsed-title { grid-column: 1/-1; font-family: var(--mono); font-size: 10px; color: var(--green); font-weight: 600; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 6px; }
+
+/* ── CHART ── */
+.chart-wrap { position: relative; height: 200px; }
+
+/* ── LOADING ── */
+.loading { display: flex; align-items: center; gap: 10px; padding: 2rem; color: var(--ink-3); font-size: 13px; justify-content: center; }
+.spinner { width: 18px; height: 18px; border: 2px solid var(--rule); border-top-color: var(--ink); border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── EMPTY ── */
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 3rem; opacity: .45; }
+.empty-icon { font-size: 36px; }
+.empty-text { font-family: var(--serif); font-size: 17px; font-style: italic; }
+.empty-sub  { font-size: 12px; color: var(--ink-3); text-align: center; max-width: 240px; }
+
+/* ── FILTER BAR ── */
+.filter-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: space-between; margin-bottom: 1rem; }
+.filter-bar select { width: auto; font-size: 12px; padding: 5px 9px; }
+
+/* ── CODE BLOCK ── */
+.code-block { background: #1a1a18; color: #d4d4d4; border-radius: var(--r-md); padding: 14px 16px; font-family: var(--mono); font-size: 11.5px; line-height: 1.65; overflow-x: auto; margin: 8px 0; }
+
+/* ── SETUP SCREEN ── */
+.setup-wrap { display: flex; align-items: flex-start; justify-content: center; min-height: 100vh; background: var(--surface); padding: 3rem 1rem; }
+.setup-card { background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: 2rem; width: 560px; max-width: 100%; box-shadow: var(--shadow-md); }
+.setup-card-title { font-family: var(--serif); font-size: 24px; margin-bottom: 6px; }
+.setup-card-sub   { font-size: 13px; color: var(--ink-3); margin-bottom: 2rem; }
+.step { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 1.5rem; }
+.step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: #fff; font-family: var(--mono); font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.step-body { flex: 1; }
+.step-label { font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--ink); }
+
+/* ── LATEX ── */
+.latex-out { background: #1a1a18; color: #d4d4d4; font-family: var(--mono); font-size: 12px; height: 340px; border-color: #2a2a28; }
+.upload-zone {
+  border: 1.5px dashed var(--rule);
+  border-radius: var(--r-md); padding: 1.25rem; text-align: center;
+  cursor: pointer; transition: all .2s; background: var(--surface);
+  margin-bottom: 1rem; position: relative;
+}
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--accent-bg); }
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* ── AI OUTPUT ── */
+.ai-response { font-size: 13px; line-height: 1.8; color: var(--ink-2); }
+
+/* ── TAG CHIPS ── */
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 12px; background: var(--surface);
+  border: 1px solid var(--rule); color: var(--ink-2);
+}
+.chip .remove { cursor: pointer; color: var(--ink-3); font-size: 14px; line-height: 1; transition: color .1s; }
+.chip .remove:hover { color: var(--red); }
+
+/* ── BANNER ── */
+.banner {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px;
+  padding: 12px 16px; border-radius: var(--r-md);
+  margin-bottom: 1.25rem;
+  border: 1px solid;
+  font-size: 13px;
+}
+.banner.info   { background: var(--blue-bg);  border-color: #bfdbfe; color: var(--blue); }
+.banner.warn   { background: var(--amber-bg); border-color: #fde68a; color: var(--amber); }
+.banner.success{ background: var(--green-bg); border-color: #a7f3d0; color: var(--green); }
+
+/* ── HW DOT ── */
+.notif { display: inline-block; width: 6px; height: 6px; background: var(--red); border-radius: 50%; flex-shrink: 0; }
+
+/* ── RECENT ITEM ── */
+.recent-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--rule-2); font-size: 13px; }
+.recent-item:last-child { border-bottom: none; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  .content { padding: 1rem .9rem; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .two-col { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .table-header { display: none; }
+  .table-row { grid-template-columns: 1fr auto auto; }
+  .table-row > div:nth-child(2),
+  .table-row > div:nth-child(3),
+  .table-row > div:nth-child(4) { display: none; }
+  .sched-grid { grid-template-columns: repeat(5, minmax(95px,1fr)); }
+  .sched-col:nth-child(6), .sched-col:nth-child(7) { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════ SETUP ══════ -->
+<div id="setup-screen" style="display:none;">
+  <div class="setup-wrap">
+    <div class="setup-card">
+      <div class="setup-card-title">Σύνδεση Supabase</div>
+      <div class="setup-card-sub">Μια φορά setup — μετά τα δεδομένα συγχρονίζονται παντού.</div>
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-label">Δωρεάν λογαριασμός στο Supabase</div>
+          <a href="https://supabase.com" target="_blank" class="btn sm">supabase.com →</a>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body"><div class="step-label">New Project → όνομα: <code>kechagias-teaching</code></div></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-label">Project Settings → API → αντέγραψε:</div>
+          <div class="field" style="margin-bottom:8px;margin-top:8px;">
+            <label>Project URL</label>
+            <input type="text" id="setup-url" placeholder="https://xxxx.supabase.co">
+          </div>
+          <div class="field">
+            <label>anon public key</label>
+            <input type="text" id="setup-key" placeholder="eyJhbGci...">
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-label">SQL Editor → New query → τρέξε:</div>
+          <div class="code-block" id="sql-setup-code">-- Τρέξε αυτό στο SQL Editor του Supabase
+create table if not exists lessons (
+  id bigint primary key generated always as identity,
+  student text, date text, subject text, topic text,
+  duration int, fee numeric, payment text, type text,
+  notes text, created_at timestamptz default now()
+);
+create table if not exists schedule (
+  id bigint primary key generated always as identity,
+  student text, day int, start_time text,
+  duration int, subject text, fee numeric, type text
+);
+create table if not exists homework (
+  id bigint primary key generated always as identity,
+  type text, student text, description text,
+  priority text, deadline text, done boolean default false,
+  created_at timestamptz default now()
+);
+-- RLS
+alter table lessons enable row level security;
+alter table schedule enable row level security;
+alter table homework enable row level security;
+-- Policies
+drop policy if exists "public_all" on lessons;
+drop policy if exists "public_all" on schedule;
+drop policy if exists "public_all" on homework;
+create policy "public_all" on lessons for all using (true) with check (true);
+create policy "public_all" on schedule for all using (true) with check (true);
+create policy "public_all" on homework for all using (true) with check (true);</div>
+          <button class="btn sm" onclick="copySQL()" style="margin-top:6px;">📋 Αντιγραφή SQL</button>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <button class="btn primary full" onclick="connectSupabase()">Σύνδεση & Εκκίνηση →</button>
+          <div id="setup-error" style="font-size:12px;color:var(--red);margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MAIN APP ══════ -->
+<div id="main-app" style="display:none;">
+  <div class="topnav">
+    <div class="topnav-brand">
+      <div class="topnav-name">Teaching Hub</div>
+      <div class="topnav-role">Χρήστος Κεχαγιάς · Μαθηματικά</div>
+    </div>
+    <div class="topnav-right">
+      <div class="sync-pill">
+        <div class="sync-dot" id="sync-dot"></div>
+        <span id="sync-label">sync</span>
+      </div>
+      <button class="btn sm primary" onclick="openModal('add')">+ Μάθημα</button>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <button class="tabbar-btn active" onclick="switchTab('overview')">Επισκόπηση</button>
+    <button class="tabbar-btn" onclick="switchTab('lessons')">Μαθήματα</button>
+    <button class="tabbar-btn" onclick="switchTab('students')">Μαθητές</button>
+    <button class="tabbar-btn" onclick="switchTab('schedule')">Πρόγραμμα</button>
+    <button class="tabbar-btn" onclick="switchTab('homework')">Εργασίες <span class="notif" id="hw-dot" style="display:none;"></span></button>
+    <button class="tabbar-btn" onclick="switchTab('finance')">Οικονομικά</button>
+    <button class="tabbar-btn" onclick="switchTab('latex')">LaTeX</button>
+    <button class="tabbar-btn" onclick="switchTab('insights')">AI Insights</button>
+    <button class="tabbar-btn" onclick="switchTab('settings')">Ρυθμίσεις</button>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="panel active" id="tab-overview">
+      <div class="metrics-grid">
+        <div class="metric-card"><div class="metric-label">Εισόδημα μήνα</div><div class="metric-value pos" id="ov-income">€0</div><div class="metric-sub">τρέχων μήνας</div></div>
+        <div class="metric-card"><div class="metric-label">Οφειλές</div><div class="metric-value" id="ov-unpaid">€0</div><div class="metric-sub" id="ov-uc">—</div></div>
+        <div class="metric-card"><div class="metric-label">Μαθήματα εβδ.</div><div class="metric-value" id="ov-sess">0</div><div class="metric-sub" id="ov-hrs">0h</div></div>
+        <div class="metric-card"><div class="metric-label">Ενεργοί μαθητές</div><div class="metric-value" id="ov-stu">0</div><div class="metric-sub">ιδιαίτερα + τμήματα</div></div>
+      </div>
+      <div id="checkin-banner"></div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Πρόσφατα μαθήματα</div>
+          <div id="recent-lessons"><div class="empty"><span class="empty-icon">📚</span><span class="empty-text">Κανένα μάθημα ακόμα</span></div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Insights</div>
+          <div id="quick-insights"><div style="font-size:12.5px;color:var(--ink-3);padding:.5rem 0;">Καταχώρησε μαθήματα για insights.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Εβδομαδιαίο εισόδημα</div>
+        <div class="chart-wrap"><canvas id="weeklyChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- LESSONS -->
+    <div class="panel" id="tab-lessons">
+      <div class="filter-bar">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <select id="filter-stu" onchange="renderLessons()" style="width:auto;font-size:12px;padding:5px 9px;"></select>
+          <select id="filter-pay" onchange="renderLessons()" style="width:auto;font-size:12px;padding:5px 9px;">
+            <option value="">Όλες πληρωμές</option>
+            <option value="paid">Πληρωμένα</option>
+            <option value="unpaid">Ανεξόφλητα</option>
+            <option value="partial">Μερικά</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn sm" onclick="openVoice()">🎙 Φωνητική</button>
+          <span id="lesson-count" style="font-family:var(--mono);font-size:11px;color:var(--ink-3);"></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-header"><span>Μαθητής</span><span>Θέμα</span><span>Διάρκ.</span><span>Αμοιβή</span><span>Πληρωμή</span><span></span></div>
+        <div id="lesson-list"></div>
+      </div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div class="panel" id="tab-students">
+      <div class="card">
+        <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr;gap:8px;padding:0 0 9px;border-bottom:1.5px solid var(--rule);font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);">
+          <span>Μαθητής</span><span>Μάθημα</span><span>Ώρες</span><span>Οφείλει</span><span>Σημ.</span>
+        </div>
+        <div id="student-list"></div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div class="panel" id="tab-schedule">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-family:var(--serif);font-size:20px;font-style:italic;">Εβδομαδιαίο Πρόγραμμα</div>
+          <div style="font-size:12px;color:var(--ink-3);margin-top:3px;">Σταθερές ώρες — καταχώρησε μια φορά</div>
+        </div>
+        <button class="btn primary" onclick="openScheduleModal()">+ Νέα ώρα</button>
+      </div>
+      <div id="schedule-view"></div>
+      <div class="banner warn" style="margin-top:1rem;">
+        <span>📋 Έλεγχος ημέρας εμφανίζεται αυτόματα κάθε βράδυ στις 21:00 για επιβεβαίωση μαθημάτων.</span>
+        <button class="btn sm" onclick="triggerCheckin()">Εκκίνηση τώρα →</button>
+      </div>
+    </div>
+
+    <!-- HOMEWORK -->
+    <div class="panel" id="tab-homework">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;">
+        <div style="font-family:var(--serif);font-size:20px;font-style:italic;">Εργασίες & Φυλλάδια</div>
+        <button class="btn primary" onclick="openHWModal()">+ Νέα εργασία</button>
+      </div>
+      <div class="two-col">
+        <div class="card"><div class="card-title">Εργασίες μαθητών</div><div id="hw-stu-list"></div></div>
+        <div class="card"><div class="card-title">Φυλλάδια προς ετοιμασία</div><div id="hw-ws-list"></div></div>
+      </div>
+    </div>
+
+    <!-- FINANCE -->
+    <div class="panel" id="tab-finance">
+      <div class="metrics-grid">
+        <div class="metric-card"><div class="metric-label">Σύνολο εισπράξεων</div><div class="metric-value pos" id="fin-total">€0</div></div>
+        <div class="metric-card"><div class="metric-label">Τρέχων μήνας</div><div class="metric-value" id="fin-month">€0</div></div>
+        <div class="metric-card"><div class="metric-label">Εκκρεμείς</div><div class="metric-value neg" id="fin-owed">€0</div></div>
+        <div class="metric-card"><div class="metric-label">Ποσοστό είσπραξης</div><div class="metric-value" id="fin-rate">—</div></div>
+      </div>
+      <div class="two-col">
+        <div class="card"><div class="card-title">Εισόδημα ανά μήνα</div><div class="chart-wrap"><canvas id="monthChart"></canvas></div></div>
+        <div class="card"><div class="card-title">Κατανομή πληρωμών</div><div class="chart-wrap"><canvas id="payChart"></canvas></div></div>
+      </div>
+      <div class="card"><div class="card-title">Ανεξόφλητα μαθήματα</div><div id="unpaid-list"></div></div>
+    </div>
+
+    <!-- LATEX -->
+    <div class="panel" id="tab-latex">
+      <div class="two-col">
+        <div>
+          <div class="card">
+            <div class="card-title">Μεταφόρτωση αρχείου</div>
+            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="dov(event)" ondragleave="dlv()" ondrop="dropFile(event)">
+              <input type="file" id="file-input" accept=".pdf,.docx,.txt" onchange="handleFileUpload(event)">
+              <div style="font-size:24px;margin-bottom:6px;">📄</div>
+              <div style="font-size:13px;font-weight:500;margin-bottom:3px;">Σύρε ή κλικ για upload</div>
+              <div style="font-size:11.5px;color:var(--ink-3);">PDF, Word (.docx), ή απλό κείμενο</div>
+              <div id="file-status" style="font-size:12px;color:var(--green);margin-top:8px;min-height:16px;"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Ρυθμίσεις μετατροπής</div>
+            <div class="form-row" style="margin-bottom:10px;">
+              <div class="field"><label>Τύπος εγγράφου</label>
+                <select id="latex-type"><option value="theory">Θεωρία / Σημειώσεις</option><option value="exam">Διαγώνισμα</option><option value="worksheet">Φυλλάδιο εξάσκησης</option><option value="solutions">Λύσεις διαγωνίσματος</option></select>
+              </div>
+              <div class="field"><label>Μάθημα</label><select id="latex-subject"></select></div>
+            </div>
+            <div class="field" style="margin-bottom:10px;"><label>Ή πληκτρολόγησε κείμενο</label><textarea id="latex-input" style="height:90px;" placeholder="Επικόλλησε κείμενο ή περίγραψε τι θέλεις..."></textarea></div>
+            <div class="field" style="margin-bottom:14px;"><label>Επιπλέον οδηγίες</label><textarea id="latex-extra" style="height:46px;" placeholder="π.χ. Πρόσθεσε 3 βήματα στη λύση..."></textarea></div>
+            <button class="btn primary full" onclick="convertToLatex()">Μετατροπή σε LaTeX →</button>
+          </div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div class="card-title" style="margin-bottom:0;">LaTeX Έξοδος</div>
+            <div style="display:flex;gap:6px;"><button class="btn sm" onclick="copyLatex()">📋</button><button class="btn sm" onclick="downloadLatex()">⬇ .tex</button></div>
+          </div>
+          <textarea class="latex-out" id="latex-output" readonly placeholder="Ο LaTeX κώδικας θα εμφανιστεί εδώ...&#10;&#10;Χρησιμοποίησε το Overleaf.com για compile."></textarea>
+          <div id="latex-status" style="font-size:12px;color:var(--ink-3);margin-top:8px;min-height:16px;"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Γρήγορες εντολές</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <button class="btn sm" onclick="setLatexPrompt('Φτιάξε φυλλάδιο εξάσκησης για τριγωνομετρικές εξισώσεις Β Λυκείου με 6 ασκήσεις κλιμακωτής δυσκολίας')">Φυλλάδιο Τριγ/τρίας</button>
+          <button class="btn sm" onclick="setLatexPrompt('Φτιάξε διαγώνισμα Άλγεβρας Β Λυκείου Θέμα Α-Δ για δευτεροβάθμιες εξισώσεις')">Διαγώνισμα Άλγεβρας</button>
+          <button class="btn sm" onclick="setLatexPrompt('Φτιάξε σημειώσεις θεωρίας για συναρτήσεις Β Λυκείου με ορισμούς, θεωρήματα και παραδείγματα')">Σημειώσεις Συναρτήσεων</button>
+          <button class="btn sm" onclick="setLatexPrompt('Φτιάξε φυλλάδιο Θέμα Δ με τεχνικές και παγίδες τριγωνομετρίας')">Φυλλάδιο Θέμα Δ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI INSIGHTS -->
+    <div class="panel" id="tab-insights">
+      <div class="card">
+        <div class="card-title">Ερώτησε τα δεδομένα σου</div>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <textarea id="ai-query" style="height:72px;" placeholder="π.χ. Ποιοι μαθητές δυσκολεύονται; / Ποια η πιο φορτωμένη μέρα; / Ποιος δεν έχει πληρώσει;"></textarea>
+          <button class="btn primary" onclick="runAI()" style="align-self:flex-end;">→</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;">
+          <button class="btn sm" onclick="setAIQ('Ποιοι μαθητές χρειάζονται επιπλέον υποστήριξη;')">Αδύνατοι μαθητές</button>
+          <button class="btn sm" onclick="setAIQ('Ποιος δεν έχει πληρώσει αυτό τον μήνα;')">Ανεξόφλητα</button>
+          <button class="btn sm" onclick="setAIQ('Ποια θέματα επαναλαμβάνω περισσότερο;')">Topic patterns</button>
+          <button class="btn sm" onclick="setAIQ('Πρότεινε φυλλάδιο για το πιο αδύνατο θέμα.')">Ιδέα φυλλαδίου</button>
+        </div>
+      </div>
+      <div id="ai-output"><div class="card"><div class="empty" style="padding:1.5rem;opacity:.4;"><span class="empty-icon">🧠</span><span class="empty-text">Κάνε μια ερώτηση</span></div></div></div>
+      <div class="card"><div class="card-title">Αυτόματα patterns</div><div id="auto-insights"></div></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="panel" id="tab-settings">
+      <div style="font-family:var(--serif);font-size:22px;font-style:italic;margin-bottom:1.5rem;">Ρυθμίσεις</div>
+
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-title">Μαθήματα που διδάσκω</div>
+        <div style="font-size:12px;color:var(--ink-3);margin-bottom:12px;">Εμφανίζονται στα dropdowns της εφαρμογής.</div>
+        <div id="subjects-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="new-subject" placeholder="π.χ. Άλγεβρα Γ΄ Λυκείου" style="flex:1;">
+          <button class="btn primary sm" onclick="addSubject()">+ Προσθήκη</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-title">Τάξεις / Τμήματα</div>
+        <div id="classes-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="new-class" placeholder="π.χ. Β2, Γ Λυκείου" style="flex:1;">
+          <button class="btn primary sm" onclick="addClass()">+ Προσθήκη</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-title">Προεπιλογές</div>
+        <div class="form-row">
+          <div class="field"><label>Χρέωση ιδιαιτέρου (€)</label><input type="number" id="default-fee-private" placeholder="25"></div>
+          <div class="field"><label>Χρέωση φροντιστηρίου (€)</label><input type="number" id="default-fee-class" placeholder="15"></div>
+        </div>
+        <div class="form-row" style="margin-bottom:14px;">
+          <div class="field"><label>Διάρκεια ιδιαιτέρου (λεπτά)</label><input type="number" id="default-dur-private" placeholder="60"></div>
+          <div class="field"><label>Διάρκεια φροντιστηρίου (λεπτά)</label><input type="number" id="default-dur-class" placeholder="90"></div>
+        </div>
+        <button class="btn primary" onclick="saveDefaults()">Αποθήκευση</button>
+      </div>
+
+      <div class="card" style="margin-bottom:1rem;background:var(--blue-bg);border-color:#bfdbfe;">
+        <div class="card-title">AI Proxy URL</div>
+        <div style="font-size:12.5px;color:var(--ink-3);margin-bottom:10px;">Για AI features (LaTeX, insights) από το Netlify — χρειάζεται Cloudflare Worker. Δες το <code>cloudflare_worker.js</code>.</div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="proxy-url-input" placeholder="https://teaching-proxy.YOUR-NAME.workers.dev" style="flex:1;">
+          <button class="btn primary sm" onclick="saveProxyURL()">Αποθήκευση</button>
+        </div>
+        <div id="proxy-status" style="font-size:12px;margin-top:6px;color:var(--ink-3);"></div>
+      </div>
+
+      <div class="card" style="border-color:#fecaca;background:var(--red-bg);">
+        <div class="card-title">Επανασύνδεση Supabase</div>
+        <button class="btn danger" onclick="resetSupabase()">🔄 Επαναρύθμιση</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main-app -->
+
+<!-- ══════ MODALS ══════ -->
+
+<!-- Add/Edit Lesson -->
+<div class="overlay" id="modal-lesson" onclick="if(event.target===this)closeLessonModal()">
+  <div class="modal">
+    <div class="modal-title" id="modal-lesson-title">Καταχώρηση μαθήματος</div>
+    <div class="form-row"><div class="field"><label>Μαθητής / Τμήμα</label><input type="text" id="f-student" list="stu-dl"><datalist id="stu-dl"></datalist></div><div class="field"><label>Ημερομηνία</label><input type="date" id="f-date"></div></div>
+    <div class="form-row"><div class="field"><label>Μάθημα</label><select id="f-subject"></select></div><div class="field"><label>Θέμα</label><input type="text" id="f-topic" placeholder="π.χ. Θέμα Δ — Ολοκληρώματα"></div></div>
+    <div class="form-row"><div class="field"><label>Διάρκεια (λεπτά)</label><input type="number" id="f-duration" placeholder="60"></div><div class="field"><label>Χρέωση (€)</label><input type="number" id="f-fee" placeholder="25" step="0.5"></div></div>
+    <div class="form-row"><div class="field"><label>Πληρωμή</label><select id="f-payment"><option value="paid">Πληρώθηκε</option><option value="unpaid">Ανεξόφλητο</option><option value="partial">Μερική</option></select></div><div class="field"><label>Τύπος</label><select id="f-type"><option value="private">Ιδιαίτερο</option><option value="class">Φροντιστήριο</option></select></div></div>
+    <div class="field"><label>Σημειώσεις / Δυσκολίες</label><div style="display:flex;gap:6px;"><textarea id="f-notes" style="height:60px;" placeholder="Δυσκολίες, παρατηρήσεις..."></textarea><button class="btn mic" id="notes-mic" onclick="toggleMic('notes')" title="Φωνητική">🎙</button></div></div>
+    <div class="modal-footer"><button class="btn" onclick="closeLessonModal()">Ακύρωση</button><button class="btn primary" onclick="saveLesson()">Αποθήκευση</button></div>
+  </div>
+</div>
+
+<!-- Quick Voice -->
+<div class="overlay" id="modal-voice" onclick="if(event.target===this)closeVoice()">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-title">Φωνητική καταχώρηση</div>
+    <p style="font-size:13px;color:var(--ink-3);margin-bottom:1rem;">Πες π.χ.: <em>"Σήμερα με την Ειρήνη, Ανάλυση, Θέμα Δ, δυσκολία στα ολοκληρώματα, εξήντα λεπτά, εικοσιπέντε ευρώ, πληρώθηκε"</em></p>
+    <div class="voice-box">
+      <div class="voice-row"><button class="btn mic" id="quick-mic" onclick="toggleQuickVoice()">🎙</button><div class="voice-status" id="voice-status">Πάτα για εγγραφή</div></div>
+      <div class="voice-transcript" id="voice-transcript">Μιλάς εδώ...</div>
+    </div>
+    <div id="voice-parsed"></div>
+    <div class="modal-footer"><button class="btn" onclick="closeVoice()">Ακύρωση</button><button class="btn primary" id="voice-confirm" onclick="confirmVoice()" style="display:none;">✓ Αποθήκευση</button></div>
+  </div>
+</div>
+
+<!-- Schedule -->
+<div class="overlay" id="modal-schedule" onclick="if(event.target===this)closeScheduleModal()">
+  <div class="modal">
+    <div class="modal-title" id="schedule-modal-title">Προσθήκη σταθερής ώρας</div>
+    <input type="hidden" id="sc-edit-id">
+    <div class="form-row"><div class="field"><label>Μαθητής / Τμήμα</label><input type="text" id="sc-student" list="stu-dl"><datalist id="class-dl"></datalist></div><div class="field"><label>Ημέρα</label><select id="sc-day"><option value="1">Δευτέρα</option><option value="2">Τρίτη</option><option value="3">Τετάρτη</option><option value="4">Πέμπτη</option><option value="5">Παρασκευή</option><option value="6">Σάββατο</option><option value="0">Κυριακή</option></select></div></div>
+    <div class="form-row"><div class="field"><label>Ώρα</label><input type="time" id="sc-start" value="16:00"></div><div class="field"><label>Διάρκεια (λεπτά)</label><input type="number" id="sc-duration" value="60"></div></div>
+    <div class="form-row"><div class="field"><label>Μάθημα</label><select id="sc-subject"></select></div><div class="field"><label>Χρέωση (€)</label><input type="number" id="sc-fee" placeholder="25"></div></div>
+    <div class="field" style="margin-bottom:0;"><label>Τύπος</label><select id="sc-type"><option value="private">Ιδιαίτερο</option><option value="class">Φροντιστήριο</option></select></div>
+    <div class="modal-footer"><button class="btn" onclick="closeScheduleModal()">Ακύρωση</button><button class="btn primary" onclick="saveScheduleSlot()">Αποθήκευση</button></div>
+  </div>
+</div>
+
+<!-- HW -->
+<div class="overlay" id="modal-hw" onclick="if(event.target===this)closeHWModal()">
+  <div class="modal">
+    <div class="modal-title">Νέα εργασία / φυλλάδιο</div>
+    <div class="form-row"><div class="field"><label>Τύπος</label><select id="hw-type" onchange="toggleHWType()"><option value="student">Εργασία μαθητή</option><option value="worksheet">Φυλλάδιο προς ετοιμασία</option></select></div><div class="field" id="hw-stu-grp"><label>Μαθητής</label><input type="text" id="hw-student" list="stu-dl"></div></div>
+    <div class="field" style="margin-bottom:10px;"><label>Περιγραφή</label><div style="display:flex;gap:6px;"><textarea id="hw-desc" style="height:64px;" placeholder="Ασκήσεις, θέματα..."></textarea><button class="btn mic" onclick="toggleMic('hw')" id="hw-mic">🎙</button></div></div>
+    <div class="form-row"><div class="field"><label>Προτεραιότητα</label><select id="hw-priority"><option value="high">Υψηλή 🔴</option><option value="med" selected>Μέτρια 🟡</option><option value="low">Χαμηλή 🟢</option></select></div><div class="field"><label>Προθεσμία</label><input type="date" id="hw-deadline"></div></div>
+    <div class="modal-footer"><button class="btn" onclick="closeHWModal()">Ακύρωση</button><button class="btn primary" onclick="saveHW()">Αποθήκευση</button></div>
+  </div>
+</div>
+
+<!-- Check-in -->
+<div class="overlay" id="modal-checkin">
+  <div class="modal">
+    <div class="modal-title">Έλεγχος ημέρας</div>
+    <p style="font-size:13px;color:var(--ink-3);margin-bottom:1rem;" id="checkin-date"></p>
+    <div id="checkin-items"></div>
+    <div class="modal-footer"><button class="btn primary" onclick="finalizeCheckin()">Ολοκλήρωση</button></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- PDF.js for PDF reading -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -541,7 +1400,7 @@ create policy "public_all" on homework for all using (true) with check (true);</
         <div class="card" style="background:#fff8f6;border-color:#fca5a5;">
           <div class="section-title" style="color:#991b1b;">Επανασύνδεση Supabase</div>
           <div style="font-size:13px;color:#666;margin-bottom:12px;">Αν θέλεις να αλλάξεις τα στοιχεία σύνδεσης:</div>
-          <button class="btn danger-btn" onclick="resetSupabase()">🔄 Επαναρύθμιση Supabase</button>
+          <button class="btn danger" onclick="resetSupabase()">🔄 Επαναρύθμιση Supabase</button>
         </div>
       </div>
 
@@ -772,7 +1631,7 @@ async function markPaid(id) { await updateLesson(id,{payment:'paid'}); }
 // ===================== TABS =====================
 function switchTab(t){
   const ids=['overview','lessons','students','schedule','homework','finance','latex','insights','settings'];
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',ids[i]===t));
+  document.querySelectorAll('.tabbar-btn').forEach((el,i)=>el.classList.toggle('active',ids[i]===t));
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
   if(t==='finance')renderFinance();
@@ -811,10 +1670,14 @@ function renderOverview(){
 
   const todaySlots=getTodaySlots();
   const ci=localStorage.getItem('ck_ci_'+new Date().toISOString().slice(0,10));
-  document.getElementById('checkin-banner').innerHTML=(todaySlots.length&&!ci)?`<div class="card" style="background:#fffbeb;border-color:#fde68a;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1rem;"><div><strong>📋 Έλεγχος ημέρας</strong> <span style="font-size:13px;color:#666;">— ${todaySlots.length} μαθήματα σήμερα</span></div><button class="btn sm" onclick="triggerCheckin()">Εκκίνηση →</button></div>`:'';
+  document.getElementById('checkin-banner').innerHTML=(todaySlots.length&&!ci)?`<div class="banner warn"><div><strong>📋 Έλεγχος ημέρας</strong> &nbsp;— ${todaySlots.length} μαθήματα σήμερα</div><button class="btn sm" onclick="triggerCheckin()">Εκκίνηση →</button></div>`:'';
 }
 
-function renderIC(i){return `<div class="insight-card ${i.type}"><div class="insight-title ${i.type}">${i.title}</div><div class="insight-body">${i.body}</div>${i.action?'<div class="insight-action">'+i.action+'</div>':''}</div>`;}
+function renderIC(i){
+  const typeMap={operational:'ops',weakness:'weak',positive:'pos'};
+  const t=typeMap[i.type]||i.type;
+  return `<div class="insight ${t}"><div class="insight-label ${t}">${i.title}</div><div class="insight-body">${i.body}</div>${i.action?'<div class="insight-action">'+i.action+'</div>':''}</div>`;
+}
 
 function getQuickInsights(){
   const ins=[];
@@ -841,7 +1704,7 @@ function renderLessons(){
       <div><span class="badge ${l.payment}">${l.payment==='paid'?'Πλ/θηκε':l.payment==='partial'?'Μερική':'Οφείλει'}</span></div>
       <div style="display:flex;gap:3px;">
         <button class="btn sm" onclick="openModal('edit',${l.id})">✏️</button>
-        <button class="btn sm danger-btn" onclick="deleteLesson(${l.id})">🗑</button>
+        <button class="btn sm danger" onclick="deleteLesson(${l.id})">🗑</button>
       </div>
     </div>`).join(''):'<div style="font-size:13px;color:#aaa;text-align:center;padding:1.5rem;">Δεν υπάρχουν.</div>';
 }
@@ -852,13 +1715,13 @@ function renderStudents(){
   lessons.forEach(l=>{if(!map[l.student])map[l.student]={mins:0,owed:0,notes:0,subs:new Set()};map[l.student].mins+=(l.duration||0);if(l.payment==='unpaid')map[l.student].owed+=Number(l.fee||0);if(l.notes)map[l.student].notes++;map[l.student].subs.add(l.subject||'');});
   const rows=Object.entries(map);
   document.getElementById('student-list').innerHTML=rows.length?rows.map(([n,d])=>`
-    <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #f0eeea;font-size:13px;">
-      <div style="font-weight:500;">${n}</div>
-      <div style="font-size:12px;color:#999;">${[...d.subs].join(', ')}</div>
-      <div>${(d.mins/60).toFixed(1)}h</div>
-      <div>${d.owed>0?'<span class="badge unpaid">€'+d.owed.toFixed(0)+'</span>':'<span style="color:#aaa;">—</span>'}</div>
-      <div>${d.notes>0?'<span class="badge neutral">'+d.notes+' σημ.</span>':'<span style="color:#aaa;">—</span>'}</div>
-    </div>`).join(''):'<div style="font-size:13px;color:#aaa;text-align:center;padding:1.5rem;">Δεν υπάρχουν μαθητές.</div>';
+    <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule-2);font-size:13px;">
+      <div style="font-weight:600;">${n}</div>
+      <div style="font-size:12px;color:var(--ink-3);">${[...d.subs].join(', ')}</div>
+      <div style="font-family:var(--mono);font-size:12px;">${(d.mins/60).toFixed(1)}h</div>
+      <div>${d.owed>0?'<span class="badge unpaid">€'+d.owed.toFixed(0)+'</span>':'<span style="color:var(--ink-3);font-size:12px;">—</span>'}</div>
+      <div>${d.notes>0?'<span class="badge neutral">'+d.notes+' σημ.</span>':'<span style="color:var(--ink-3);font-size:12px;">—</span>'}</div>
+    </div>`).join(''):'<div style="font-size:13px;color:var(--ink-3);text-align:center;padding:1.5rem;">Δεν υπάρχουν μαθητές.</div>';
 }
 
 function updateStudentDatalist(){
@@ -956,26 +1819,27 @@ function renderSchedule(){
   DAY_ORDER.forEach(d=>{ if(byDay[d]) byDay[d].sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||'')); });
   const cols=DAY_ORDER.map(d=>{
     const slots=byDay[d]||[];
-    const cells=slots.map(s=>`<div class="schedule-cell ${s.type==='private'?'private':''}">
-      <div class="schedule-cell-time">${s.start_time||''}</div>
-      <div class="schedule-cell-name" title="${s.student}">${s.student}</div>
-      <div class="schedule-cell-detail">${s.subject||''} · ${s.duration||0}' · €${s.fee||0}</div>
-      <div class="schedule-cell-actions">
+    const cells=slots.map(s=>`<div class="sched-cell ${s.type==='private'?'prv':'cls'}">
+      <div class="sched-cell-time">${s.start_time||''}</div>
+      <div class="sched-cell-name" title="${s.student}">${s.student}</div>
+      <div class="sched-cell-detail">${s.subject||''} · ${s.duration||0}' · €${s.fee||0}</div>
+      <div class="sched-cell-act">
         <button class="btn sm" style="padding:2px 6px;font-size:10px;" onclick="openScheduleModal(${s.id})">✏️</button>
-        <button class="btn sm danger-btn" style="padding:2px 6px;font-size:10px;" onclick="deleteSchedule(${s.id})">🗑</button>
+        <button class="btn sm danger" style="padding:2px 6px;font-size:10px;" onclick="deleteSchedule(${s.id})">🗑</button>
       </div></div>`).join('');
-    return `<div class="schedule-col">
-      <div class="schedule-col-header">${DAY_LABELS[d]}</div>
-      <div class="schedule-col-body">${cells||'<div style="text-align:center;padding:10px 0;font-size:10px;color:#ccc;">—</div>'}</div>
+    const todayDay=new Date().getDay();
+    return `<div class="sched-col">
+      <div class="sched-col-head${d===todayDay?' today':''}">${DAY_LABELS[d]}</div>
+      <div class="sched-col-body">${cells||'<div style="text-align:center;padding:10px 0;font-size:10px;color:#ccc;">—</div>'}</div>
     </div>`;
   }).join('');
   const totalH=(schedule.reduce((s,x)=>s+(x.duration||0),0)/60).toFixed(1);
   const totalF=schedule.reduce((s,x)=>s+Number(x.fee||0),0).toFixed(0);
-  v.innerHTML=`<div class="schedule-legend">
+  v.innerHTML=`<div class="sched-legend">
     <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:3px;background:#93c5fd;display:inline-block;"></span>Φροντιστήριο</span>
     <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:3px;background:#c4b5fd;display:inline-block;"></span>Ιδιαίτερο</span>
-    <span style="margin-left:auto;">${schedule.length} ώρες/εβδ · ${totalH}h · €${totalF}/εβδ</span>
-  </div><div class="schedule-grid">${cols}</div>`;
+    <span class="sched-summary">${schedule.length} ώρες/εβδ · ${totalH}h · €${totalF}/εβδ</span>
+  </div><div class="sched-grid">${cols}</div>`;
 }
 function getTodaySlots(){const d=new Date().getDay();return schedule.filter(s=>s.day===d).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));}
 
@@ -985,7 +1849,7 @@ function triggerCheckin(){
   document.getElementById('checkin-date').textContent=new Date().toLocaleDateString('el-GR',{weekday:'long',day:'numeric',month:'long'});
   window._ciSlots=slots; window._ciStates=slots.map(()=>({done:false}));
   document.getElementById('checkin-items').innerHTML=slots.map((s,i)=>`
-    <div class="card" id="ci-${i}" style="cursor:pointer;margin-bottom:.5rem;" onclick="toggleCI(${i})">
+    <div style="border:1px solid var(--rule);border-radius:var(--r-md);padding:12px;margin-bottom:8px;cursor:pointer;transition:background .12s;" id="ci-${i}" onclick="toggleCI(${i})">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="width:22px;height:22px;border-radius:6px;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;" id="ci-cb-${i}"></div>
         <div style="flex:1;"><div style="font-weight:500;">${s.student} — ${s.subject}</div><div style="font-size:12px;color:#999;">${s.start_time||''} · ${s.duration||0}λεπτά · €${s.fee||0}</div></div>
@@ -1005,8 +1869,8 @@ async function finalizeCheckin(){
     if(!states[i].done)continue;
     const s=slots[i], notes=(document.getElementById(`ci-text-${i}`)?.value||'').trim();
     await insertLesson({student:s.student,date:today,subject:s.subject,topic:'',duration:s.duration,fee:s.fee,payment:'unpaid',type:s.type,notes});
-    if(document.getElementById(`ci-hw-${i}`)?.checked&&notes) await insertHW({type:'student',student:s.student,description:'Εργασία: '+notes.slice(0,80),priority:'med',deadline:'',done:false});
-    if(document.getElementById(`ci-ws-${i}`)?.checked&&notes) await insertHW({type:'worksheet',student:s.student,description:'Φυλλάδιο για '+s.student+': '+notes.slice(0,80),priority:'high',deadline:'',done:false});
+    if(document.getElementById(`ci-hw-${i}`)?.checked&&notes) await insertHW({type:'student',student:s.student,description:'Εργασία: '+notes.slice(0,80),priority:'med',deadline:null,done:false});
+    if(document.getElementById(`ci-ws-${i}`)?.checked&&notes) await insertHW({type:'worksheet',student:s.student,description:'Φυλλάδιο για '+s.student+': '+notes.slice(0,80),priority:'high',deadline:null,done:false});
   }
   localStorage.setItem('ck_ci_'+today,'done');
   document.getElementById('modal-checkin').classList.remove('open');
@@ -1019,18 +1883,32 @@ function openHWModal(){updateStudentDatalist();document.getElementById('modal-hw
 function closeHWModal(){document.getElementById('modal-hw').classList.remove('open');}
 function toggleHWType(){document.getElementById('hw-stu-grp').style.display=document.getElementById('hw-type').value==='worksheet'?'none':'block';}
 async function saveHW(){
-  const desc=document.getElementById('hw-desc').value.trim(); if(!desc){alert('Συμπλήρωσε περιγραφή.');return;}
-  await insertHW({type:document.getElementById('hw-type').value,student:document.getElementById('hw-student').value.trim(),description:desc,priority:document.getElementById('hw-priority').value,deadline:document.getElementById('hw-deadline').value,done:false});
-  closeHWModal();
-  document.getElementById('hw-desc').value=''; document.getElementById('hw-student').value='';
-  renderHomework(); updateHWDot();
+  const desc=document.getElementById('hw-desc').value.trim();
+  if(!desc){alert('Συμπλήρωσε περιγραφή.');return;}
+  const deadline=document.getElementById('hw-deadline').value.trim()||null;
+  const ok=await insertHW({
+    type:document.getElementById('hw-type').value,
+    student:document.getElementById('hw-student').value.trim()||null,
+    description:desc,
+    priority:document.getElementById('hw-priority').value,
+    deadline:deadline,
+    done:false
+  });
+  if(ok){
+    closeHWModal();
+    document.getElementById('hw-desc').value='';
+    document.getElementById('hw-student').value='';
+    document.getElementById('hw-deadline').value='';
+    renderHomework();
+    updateHWDot();
+  }
 }
 function updateHWDot(){const n=homework.filter(h=>!h.done).length;const d=document.getElementById('hw-dot');if(d)d.style.display=n>0?'inline-block':'none';}
 function renderHomework(){
   updateHWDot();
   const pl={high:'🔴',med:'🟡',low:'🟢'};
   const stuHW=homework.filter(h=>h.type==='student'), wsHW=homework.filter(h=>h.type==='worksheet');
-  const render=list=>list.length?list.map(h=>`<div class="hw-item"><div class="hw-check ${h.done?'done':''}" onclick="toggleHWDone(${h.id})">${h.done?'✓':''}</div><div style="flex:1;"><div style="font-weight:500;${h.done?'text-decoration:line-through;color:#aaa':''}">${h.student?h.student+' · ':''}${h.description||''}</div><div style="font-size:11px;color:#aaa;">${pl[h.priority]||''} ${h.deadline?'· Ως '+h.deadline:''}</div></div><button class="btn sm danger-btn" onclick="deleteHW(${h.id})">🗑</button></div>`).join(''):'<div style="font-size:13px;color:#aaa;">Κανένα.</div>';
+  const render=list=>list.length?list.map(h=>`<div class="hw-item"><div class="hw-check ${h.done?'done':''}" onclick="toggleHWDone(${h.id})">${h.done?'✓':''}</div><div style="flex:1;"><div style="font-weight:500;${h.done?'text-decoration:line-through;color:var(--ink-3)':''}">${h.student?h.student+' · ':''}${h.description||''}</div><div style="font-size:11px;color:#aaa;">${pl[h.priority]||''} ${h.deadline?'· Ως '+h.deadline:''}</div></div><button class="btn sm danger" onclick="deleteHW(${h.id})">🗑</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink-3);">Κανένα.</div>';
   document.getElementById('hw-stu-list').innerHTML=render(stuHW);
   document.getElementById('hw-ws-list').innerHTML=render(wsHW);
 }
@@ -1046,7 +1924,7 @@ function updateFinMetrics(){
   document.getElementById('fin-month').textContent='€'+month.toFixed(0);
   document.getElementById('fin-owed').textContent='€'+owed.toFixed(0);
   document.getElementById('fin-rate').textContent=rate!==null?rate+'%':'—';
-  document.getElementById('fin-rate').className='metric-value '+(rate===null?'':rate>=80?'good':rate>=60?'warn':'danger');
+  document.getElementById('fin-rate').className='metric-value '+(rate===null?'':rate>=80?'pos':rate>=60?'warn':'neg');
 }
 function renderUnpaid(){
   const unp=lessons.filter(l=>l.payment==='unpaid');
@@ -1119,7 +1997,7 @@ async function parseVoiceAI(text){
   }catch(e){document.getElementById('voice-parsed').innerHTML='<div style="font-size:13px;color:var(--red);">Αδυναμία ανάλυσης: '+e.message+'</div>';}
 }
 function showParsedVoice(d){
-  document.getElementById('voice-parsed').innerHTML=`<div style="background:#f0f8ea;border:1px solid #a7f3d0;border-radius:8px;padding:10px;font-size:13px;margin-bottom:8px;"><div style="font-weight:600;color:var(--green);margin-bottom:6px;">✓ Αναγνωρίστηκε:</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div>👤 <strong>${d.student||'—'}</strong></div><div>📅 ${d.date}</div><div>📚 ${d.subject||'—'}${d.topic?' · '+d.topic:''}</div><div>⏱ ${d.duration||0}λεπτά · €${d.fee||0}</div><div>${d.payment==='paid'?'✅ Πλ/θηκε':'❌ Ανεξόφλητο'}</div><div>${d.type==='class'?'🏫 Φροντ.':'👤 Ιδιαίτερο'}</div>${d.notes?'<div style="grid-column:1/-1;color:#555;">📝 '+d.notes+'</div>':''}</div></div>`;
+  document.getElementById('voice-parsed').innerHTML=`<div style="background:#f0f8ea;border:1px solid #a7f3d0;border-radius:8px;padding:10px;font-size:13px;margin-bottom:8px;"><div style="parsed-title">✓ Αναγνωρίστηκε:</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div>👤 <strong>${d.student||'—'}</strong></div><div>📅 ${d.date}</div><div>📚 ${d.subject||'—'}${d.topic?' · '+d.topic:''}</div><div>⏱ ${d.duration||0}λεπτά · €${d.fee||0}</div><div>${d.payment==='paid'?'✅ Πλ/θηκε':'❌ Ανεξόφλητο'}</div><div>${d.type==='class'?'🏫 Φροντ.':'👤 Ιδιαίτερο'}</div>${d.notes?'<div style="grid-column:1/-1;color:#555;">📝 '+d.notes+'</div>':''}</div></div>`;
   document.getElementById('voice-confirm').style.display='block';
 }
 async function confirmVoice(){if(!parsedVoice)return;closeVoice();await insertLesson(parsedVoice);parsedVoice=null;qTranscript='';renderAll();}
@@ -1226,7 +2104,7 @@ async function runAI(){
   try{
     const d=await aiFetch({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]});
     const text=d.content?.map(b=>b.text||'').join('\n')||'';
-    out.innerHTML=`<div class="card"><div style="font-size:11px;color:#aaa;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;">AI · ${new Date().toLocaleDateString('el-GR')}</div><div style="font-size:13px;line-height:1.8;">${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/→/g,'<br>→').replace(/\n/g,'<br>')}</div></div>`;
+    out.innerHTML=`<div class="card"><div style="font-family:var(--mono);font-size:9.5px;color:var(--ink-3);margin-bottom:10px;letter-spacing:.08em;text-transform:uppercase;">AI Ανάλυση · ${new Date().toLocaleDateString('el-GR')}</div><div class="ai-response">${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/→/g,'<br>→').replace(/\n/g,'<br>')}</div></div>`;
   }catch(e){out.innerHTML=`<div class="card" style="font-size:13px;color:#aaa;">❌ ${e.message} — Πρόσθεσε Proxy URL στις Ρυθμίσεις.</div>`;}
 }
 
@@ -1279,15 +2157,15 @@ function renderSettings(){
   if(sl) sl.innerHTML=subjects.map(s=>`
     <span style="display:inline-flex;align-items:center;gap:5px;background:#f0eeea;border:1px solid #e0ddd5;border-radius:20px;padding:4px 10px;font-size:12px;">
       ${s}
-      <span onclick="removeSubject('${s.replace(/'/g,"\\'")}')" style="cursor:pointer;color:#999;font-size:14px;line-height:1;">×</span>
-    </span>`).join('');
+      <span class="remove" onclick="removeSubject('${s.replace(/'/g,"\\'")}')" >×</span>
+    </span></span>`).join('');
 
   const cl=document.getElementById('classes-list');
   if(cl) cl.innerHTML=classes.map(c=>`
     <span style="display:inline-flex;align-items:center;gap:5px;background:#f0eeea;border:1px solid #e0ddd5;border-radius:20px;padding:4px 10px;font-size:12px;">
       ${c}
-      <span onclick="removeClass('${c.replace(/'/g,"\\'")}')" style="cursor:pointer;color:#999;font-size:14px;line-height:1;">×</span>
-    </span>`).join('');
+      <span class="remove" onclick="removeClass('${c.replace(/'/g,"\\'")}')" >×</span>
+    </span></span>`).join('');
 
   const fp=document.getElementById('default-fee-private'); if(fp) fp.value=defs.feePrivate;
   const fc=document.getElementById('default-fee-class');   if(fc) fc.value=defs.feeClass;
@@ -1316,7 +2194,7 @@ function saveProxyURL(){
   const url=(document.getElementById('proxy-url-input').value||'').trim().replace(/\/+$/,'');
   if(!url){localStorage.removeItem('ck_proxy_url');document.getElementById('proxy-status').textContent='Αφαιρέθηκε.';return;}
   localStorage.setItem('ck_proxy_url',url);
-  document.getElementById('proxy-status').innerHTML='✅ Αποθηκεύτηκε: <code>'+url+'</code>';
+  document.getElementById('proxy-status').innerHTML='<span style="color:var(--green)">✓ Αποθηκεύτηκε — ' + url + '</span>';
 }
 
 function getAPIEndpoint(){
@@ -1352,5 +2230,6 @@ function resetSupabase(){
 // ===================== INIT =====================
 init();
 </script>
+
 </body>
 </html>
