@@ -630,6 +630,13 @@ create policy "public_all" on homework for all using (true) with check (true);</
 
     <!-- STUDENTS -->
     <div class="panel" id="tab-students">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-family:var(--serif);font-size:20px;font-style:italic;">Μαθητές</div>
+          <div style="font-size:12px;color:var(--ink-3);margin-top:3px;">Αυτόματα από καταχωρημένα μαθήματα — ή πρόσθεσε χειροκίνητα</div>
+        </div>
+        <button class="btn primary" onclick="openAddStudentModal()">+ Νέος μαθητής</button>
+      </div>
       <div class="card">
         <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr;gap:8px;padding:0 0 9px;border-bottom:1.5px solid var(--rule);font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);">
           <span>Μαθητής</span><span>Μάθημα</span><span>Ώρες</span><span>Οφείλει</span><span>Σημ.</span>
@@ -677,6 +684,25 @@ create policy "public_all" on homework for all using (true) with check (true);</
       <div class="two-col">
         <div class="card"><div class="card-title">Εισόδημα ανά μήνα</div><div class="chart-wrap"><canvas id="monthChart"></canvas></div></div>
         <div class="card"><div class="card-title">Κατανομή πληρωμών</div><div class="chart-wrap"><canvas id="payChart"></canvas></div></div>
+      </div>
+      <div class="card" style="background:var(--amber-bg);border-color:#fde68a;margin-bottom:1rem;">
+        <div style="font-size:12.5px;color:var(--amber);line-height:1.7;">
+          <strong>Πώς λειτουργεί η παρακολούθηση πληρωμών:</strong><br>
+          Κάθε μάθημα καταχωρείται ως <strong>Πληρωμένο</strong>, <strong>Ανεξόφλητο</strong> ή <strong>Μερική πληρωμή</strong>.
+          Το σύνολο εισπράξεων μετράει μόνο τα "Πληρωμένα". Για τα ανεξόφλητα πάτα <strong>€✓</strong> στη λίστα μαθημάτων ή εδώ κάτω.
+        </div>
+      </div>
+      <div class="card" style="background:var(--amber-bg);border-color:#fde68a;margin-bottom:.75rem;">
+        <div style="font-size:12.5px;color:var(--amber);line-height:1.7;">
+          <strong>Πώς λειτουργεί η παρακολούθηση πληρωμών:</strong><br>
+          Κάθε μάθημα καταχωρείται ως <strong>Πληρωμένο</strong>, <strong>Ανεξόφλητο</strong> ή <strong>Μερική πληρωμή</strong>.
+          Το σύνολο εισπράξεων μετράει <strong>μόνο τα Πληρωμένα</strong>. Για τα ανεξόφλητα πάτα <strong>€✓</strong> στη λίστα μαθημάτων ή παρακάτω.
+        </div>
+      </div>
+      <div class="card" style="background:var(--amber-bg);border-color:#fde68a;margin-bottom:.75rem;">
+        <div style="font-size:12.5px;color:var(--amber);line-height:1.75;">
+          <strong>Παρακολούθηση πληρωμών:</strong> Κάθε μάθημα έχει κατάσταση <strong>Πληρωμένο / Ανεξόφλητο / Μερική</strong>. Το σύνολο εισπράξεων μετράει μόνο τα Πληρωμένα. Για να σημανθεί ένα μάθημα ως πληρωμένο: πάτα <strong>€✓</strong> στη λίστα μαθημάτων ή στο παρακάτω πίνακα.
+        </div>
       </div>
       <div class="card"><div class="card-title">Ανεξόφλητα μαθήματα</div><div id="unpaid-list"></div></div>
     </div>
@@ -783,6 +809,19 @@ create policy "public_all" on homework for all using (true) with check (true);</
         <button class="btn primary" onclick="saveDefaults()">Αποθήκευση</button>
       </div>
 
+      <div class="card" style="margin-bottom:1rem;">
+        <div class="card-title">Groq API Key (φωνητική — δωρεάν)</div>
+        <div style="font-size:12.5px;color:var(--ink-3);margin-bottom:10px;">
+          Το Groq Whisper είναι πολύ καλύτερο για ελληνικά από το browser built-in.
+          Δωρεάν API key: <a href="https://console.groq.com" target="_blank" style="color:var(--blue);">console.groq.com</a>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="groq-key-input" placeholder="gsk_..." style="flex:1;">
+          <button class="btn primary sm" onclick="saveGroqKey()">Αποθήκευση</button>
+        </div>
+        <div id="groq-key-status" style="font-size:12px;margin-top:6px;color:var(--ink-3);"></div>
+      </div>
+
       <div class="card" style="margin-bottom:1rem;background:var(--blue-bg);border-color:#bfdbfe;">
         <div class="card-title">AI Proxy URL</div>
         <div style="font-size:12.5px;color:var(--ink-3);margin-bottom:10px;">Για AI features (LaTeX, insights) από το Netlify — χρειάζεται Cloudflare Worker. Δες το <code>cloudflare_worker.js</code>.</div>
@@ -822,9 +861,26 @@ create policy "public_all" on homework for all using (true) with check (true);</
   <div class="modal" style="max-width:440px;">
     <div class="modal-title">Φωνητική καταχώρηση</div>
     <p style="font-size:13px;color:var(--ink-3);margin-bottom:1rem;">Πες π.χ.: <em>"Σήμερα με την Ειρήνη, Ανάλυση, Θέμα Δ, δυσκολία στα ολοκληρώματα, εξήντα λεπτά, εικοσιπέντε ευρώ, πληρώθηκε"</em></p>
-    <div class="voice-box">
+    <div id="voice-method-bar" style="display:flex;gap:6px;margin-bottom:10px;font-size:12px;align-items:center;">
+      <span style="color:var(--ink-3);font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;">Μέθοδος:</span>
+      <button class="btn sm" id="vm-browser" onclick="setVoiceMethod('browser')" style="background:var(--ink);color:#fff;">Browser</button>
+      <button class="btn sm" id="vm-groq" onclick="setVoiceMethod('groq')">Groq Whisper</button>
+      <span id="vm-status" style="font-size:11px;color:var(--ink-3);margin-left:4px;"></span>
+    </div>
+    <div class="voice-box" id="voice-box-browser">
       <div class="voice-row"><button class="btn mic" id="quick-mic" onclick="toggleQuickVoice()">🎙</button><div class="voice-status" id="voice-status">Πάτα για εγγραφή</div></div>
       <div class="voice-transcript" id="voice-transcript">Μιλάς εδώ...</div>
+    </div>
+    <div id="voice-box-groq" style="display:none;">
+      <label class="btn primary full" style="cursor:pointer;margin-bottom:8px;">
+        🎤 Επιλογή ηχητικού αρχείου (.m4a, .mp3, .wav)
+        <input type="file" id="groq-audio-file" accept="audio/*" style="display:none;" onchange="transcribeGroq(event)">
+      </label>
+      <div style="font-size:12px;color:var(--ink-3);">Ή χρήση browser recording:</div>
+      <div class="voice-box" style="margin-top:8px;">
+        <div class="voice-row"><button class="btn mic" id="groq-rec-btn" onclick="toggleGroqRecording()">🎙</button><div class="voice-status" id="groq-rec-status">Πάτα για εγγραφή με Groq</div></div>
+        <div class="voice-transcript" id="voice-transcript-groq">Το κείμενο θα εμφανιστεί εδώ...</div>
+      </div>
     </div>
     <div id="voice-parsed"></div>
     <div class="modal-footer"><button class="btn" onclick="closeVoice()">Ακύρωση</button><button class="btn primary" id="voice-confirm" onclick="confirmVoice()" style="display:none;">✓ Αποθήκευση</button></div>
@@ -863,7 +919,7 @@ create policy "public_all" on homework for all using (true) with check (true);</
     <div id="checkin-items"></div>
     <div class="modal-footer"><button class="btn primary" onclick="finalizeCheckin()">Ολοκλήρωση</button></div>
   </div>
-</div>
+</div
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- PDF.js for PDF reading -->
@@ -872,651 +928,6 @@ create policy "public_all" on homework for all using (true) with check (true);</
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <!-- Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-
-<style>
-*{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --blue:#1a52a0;--blue-light:#dbeafe;--blue-dark:#0f3470;
-  --green:#166534;--green-light:#dcfce7;
-  --red:#991b1b;--red-light:#fee2e2;
-  --orange:#9a3412;--orange-light:#ffedd5;
-  --gray:#6b7280;--gray-light:#f3f4f6;--gray-border:#e5e7eb;
-  --white:#fff;--bg:#f5f4f0;--text:#1a1a18;
-  --radius:10px;--shadow:0 1px 4px rgba(0,0,0,.08);
-}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-
-/* ===== LAYOUT ===== */
-.app{display:flex;flex-direction:column;min-height:100vh;}
-.topnav{background:var(--text);color:#fff;padding:0 1.25rem;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100;}
-.topnav-logo{font-size:15px;font-weight:600;letter-spacing:-.01em;}
-.topnav-sub{font-size:11px;opacity:.5;margin-top:1px;}
-.topnav-right{display:flex;align-items:center;gap:10px;}
-.sync-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;}
-.sync-dot.syncing{background:#facc15;animation:blink 1s infinite;}
-.sync-dot.error{background:#f87171;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-
-.tabs{display:flex;background:var(--text);padding:0 1.25rem;overflow-x:auto;gap:0;border-top:1px solid rgba(255,255,255,.1);}
-.tab{padding:10px 16px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;color:rgba(255,255,255,.5);border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;}
-.tab.active{color:#fff;border-bottom-color:#fff;}
-.tab:hover{color:rgba(255,255,255,.8);}
-
-.content{flex:1;padding:1.25rem;max-width:1000px;margin:0 auto;width:100%;}
-.panel{display:none;}
-.panel.active{display:block;}
-
-/* ===== CARDS & GRID ===== */
-.card{background:var(--white);border-radius:var(--radius);padding:1rem 1.25rem;border:1px solid var(--gray-border);margin-bottom:1rem;box-shadow:var(--shadow);}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
-.metric-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem;}
-.metric{background:var(--white);border-radius:var(--radius);padding:12px 14px;border:1px solid var(--gray-border);}
-.metric-label{font-size:11px;color:var(--gray);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;}
-.metric-value{font-size:20px;font-weight:600;}
-.metric-sub{font-size:11px;color:#aaa;margin-top:2px;}
-.good{color:#166534;} .warn{color:#9a3412;} .danger{color:#991b1b;}
-.section-title{font-size:11px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
-
-/* ===== BUTTONS ===== */
-.btn{padding:7px 16px;font-size:13px;font-weight:500;border-radius:8px;cursor:pointer;border:1px solid var(--gray-border);background:var(--white);color:var(--text);transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
-.btn:hover{background:var(--gray-light);}
-.btn.primary{background:var(--text);color:#fff;border-color:transparent;}
-.btn.primary:hover{background:#333;}
-.btn.success{background:var(--green-light);color:var(--green);border-color:#a7f3d0;}
-.btn.danger-btn{background:var(--red-light);color:var(--red);border-color:#fca5a5;}
-.btn.sm{padding:4px 10px;font-size:12px;}
-.btn.mic{background:var(--text);color:#fff;border-radius:50%;width:38px;height:38px;padding:0;justify-content:center;font-size:16px;border:none;flex-shrink:0;}
-.btn.mic.recording{background:#dc2626;animation:pulse-r 1s infinite;}
-@keyframes pulse-r{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)}50%{box-shadow:0 0 0 8px rgba(220,38,38,0)}}
-
-/* ===== FORMS ===== */
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
-.form-group{display:flex;flex-direction:column;gap:4px;}
-.form-group label{font-size:12px;color:var(--gray);font-weight:500;}
-input,select,textarea{width:100%;padding:7px 10px;border:1px solid var(--gray-border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--white);}
-input:focus,select:focus,textarea:focus{outline:none;border-color:#999;}
-textarea{resize:vertical;}
-
-/* ===== BADGES ===== */
-.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
-.badge.paid{background:var(--green-light);color:var(--green);}
-.badge.unpaid{background:var(--red-light);color:var(--red);}
-.badge.partial{background:var(--orange-light);color:var(--orange);}
-.badge.neutral{background:var(--gray-light);color:var(--gray);}
-
-/* ===== INSIGHT CARDS ===== */
-.insight-card{border-left:3px solid;padding:10px 12px;border-radius:0 8px 8px 0;margin-bottom:8px;background:#fafaf8;}
-.insight-card.weakness{border-color:#dc2626;}
-.insight-card.operational{border-color:#f59e0b;}
-.insight-card.positive{border-color:#16a34a;}
-.insight-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
-.insight-title.weakness{color:var(--red);} .insight-title.operational{color:var(--orange);} .insight-title.positive{color:var(--green);}
-.insight-body{font-size:12px;color:#444;line-height:1.5;}
-.insight-action{margin-top:6px;padding-top:6px;border-top:1px solid #eee;font-size:11px;color:var(--gray);}
-
-/* ===== LESSON LIST ===== */
-.lesson-item{display:grid;grid-template-columns:2.5fr 1.5fr .7fr .7fr 1fr 70px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #f0eeea;font-size:13px;}
-.lesson-item:last-child{border-bottom:none;}
-.lesson-header{display:grid;grid-template-columns:2.5fr 1.5fr .7fr .7fr 1fr 70px;gap:8px;padding:5px 0 9px;border-bottom:1px solid var(--gray-border);font-size:10px;color:var(--gray);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
-
-/* ===== MODALS ===== */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;}
-.modal-overlay.open{display:flex;}
-.modal{background:var(--white);border-radius:14px;padding:1.5rem;width:560px;max-width:100%;box-shadow:0 8px 32px rgba(0,0,0,.15);margin:auto;}
-.modal h2{font-size:16px;font-weight:600;margin-bottom:1.25rem;}
-.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;}
-
-/* ===== UPLOAD ZONE ===== */
-.upload-zone{border:2px dashed var(--gray-border);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg);}
-.upload-zone:hover,.upload-zone.dragover{border-color:var(--blue);background:var(--blue-light);}
-.upload-zone p{font-size:13px;color:var(--gray);margin-top:8px;}
-.upload-icon{font-size:32px;}
-
-/* ===== LATEX OUTPUT ===== */
-.latex-out{background:#1e1e1e;color:#d4d4d4;border-color:#444;font-family:'Courier New',monospace;font-size:12px;height:340px;}
-
-/* ===== VOICE ===== */
-.voice-panel{background:var(--text);border-radius:10px;padding:1rem;color:#fff;margin-bottom:.75rem;}
-.voice-transcript{background:#2a2a28;border-radius:8px;padding:10px;font-size:13px;color:#e0dfd8;min-height:50px;margin-top:8px;line-height:1.6;}
-
-/* ===== AI LOADING ===== */
-.ai-thinking{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray);padding:12px;}
-.dot-pulse{display:flex;gap:4px;}
-.dot-pulse span{width:6px;height:6px;border-radius:50%;background:#ccc;animation:dp 1.2s infinite;}
-.dot-pulse span:nth-child(2){animation-delay:.2s;}.dot-pulse span:nth-child(3){animation-delay:.4s;}
-@keyframes dp{0%,80%,100%{opacity:.3}40%{opacity:1}}
-
-/* ===== SCHEDULE GRID ===== */
-.schedule-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:1rem;overflow-x:auto;}
-.schedule-col{min-width:110px;}
-.schedule-col-header{text-align:center;padding:8px 4px 7px;background:var(--text);color:#fff;border-radius:8px 8px 0 0;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
-.schedule-col-body{border:1px solid var(--gray-border);border-top:none;border-radius:0 0 8px 8px;min-height:60px;padding:4px;background:#fafaf8;}
-.schedule-cell{background:#dbeafe;border:1px solid #93c5fd;border-radius:6px;padding:6px 7px;margin-bottom:4px;font-size:12px;position:relative;transition:all .15s;}
-.schedule-cell:hover{background:#bfdbfe;}
-.schedule-cell.private{background:#ede9fe;border-color:#c4b5fd;}
-.schedule-cell.private:hover{background:#c4b5fd;}
-.schedule-cell-time{font-size:10px;font-weight:700;color:#1e40af;margin-bottom:2px;letter-spacing:.02em;}
-.schedule-cell.private .schedule-cell-time{color:#5b21b6;}
-.schedule-cell-name{font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.schedule-cell-detail{font-size:10px;color:#555;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.schedule-cell-actions{display:none;gap:2px;margin-top:5px;}
-.schedule-cell:hover .schedule-cell-actions{display:flex;}
-.schedule-legend{display:flex;gap:12px;font-size:11px;color:var(--gray);margin-bottom:1rem;flex-wrap:wrap;}
-.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
-@media(max-width:680px){.schedule-grid{grid-template-columns:repeat(5,minmax(90px,1fr));}.schedule-col:nth-child(6),.schedule-col:nth-child(7){display:none;}}
-
-/* ===== HW ===== */
-.hw-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #f0eeea;font-size:13px;}
-.hw-check{width:18px;height:18px;border-radius:5px;border:2px solid #ddd;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s;}
-.hw-check.done{background:var(--green);border-color:var(--green);color:#fff;}
-
-/* ===== AUTH ===== */
-.auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);}
-.auth-card{background:var(--white);border-radius:16px;padding:2rem;width:360px;box-shadow:0 4px 20px rgba(0,0,0,.1);}
-.auth-card h1{font-size:20px;font-weight:600;margin-bottom:.25rem;}
-.auth-card p{font-size:13px;color:var(--gray);margin-bottom:1.5rem;}
-
-/* ===== SETUP SCREEN ===== */
-.setup-screen{display:flex;align-items:center;justify-content:center;min-height:60vh;}
-.setup-card{background:var(--white);border-radius:14px;padding:2rem;max-width:520px;width:100%;box-shadow:var(--shadow);}
-.code-block{background:#1e1e1e;color:#d4d4d4;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;margin:8px 0;overflow-x:auto;}
-.step-num{display:inline-flex;width:22px;height:22px;background:var(--text);color:#fff;border-radius:50%;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
-
-/* ===== RESPONSIVE ===== */
-@media(max-width:640px){
-  .metric-row{grid-template-columns:1fr 1fr;}
-  .two-col{grid-template-columns:1fr;}
-  .form-row{grid-template-columns:1fr;}
-  .lesson-item,.lesson-header{grid-template-columns:2fr 1fr 0.8fr 60px;}
-  .lesson-item>div:nth-child(2),.lesson-header>span:nth-child(2),
-  .lesson-item>div:nth-child(3),.lesson-header>span:nth-child(3){display:none;}
-  .content{padding:1rem .75rem;}
-}
-</style>
-</head>
-<body>
-
-<!-- ============ SETUP SCREEN (shown when Supabase not configured) ============ -->
-<div id="setup-screen" style="display:none;">
-  <div style="max-width:600px;margin:2rem auto;padding:1rem;">
-    <div class="setup-card">
-      <h1 style="font-size:20px;font-weight:600;margin-bottom:.5rem;">⚙️ Σύνδεση Supabase</h1>
-      <p style="font-size:13px;color:var(--gray);margin-bottom:1.5rem;">Μια φορά setup — μετά όλα συγχρονίζονται αυτόματα παντού.</p>
-
-      <div style="display:flex;flex-direction:column;gap:1rem;">
-        <div style="display:flex;gap:10px;align-items:flex-start;">
-          <div class="step-num">1</div>
-          <div>
-            <div style="font-size:13px;font-weight:500;margin-bottom:4px;">Δημιούργησε δωρεάν λογαριασμό στο Supabase</div>
-            <a href="https://supabase.com" target="_blank" class="btn sm primary">supabase.com →</a>
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;">
-          <div class="step-num">2</div>
-          <div>
-            <div style="font-size:13px;font-weight:500;margin-bottom:4px;">New Project → δώσε όνομα "kechagias-teaching"</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;">
-          <div class="step-num">3</div>
-          <div style="flex:1;">
-            <div style="font-size:13px;font-weight:500;margin-bottom:4px;">Project Settings → API → αντέγραψε:</div>
-            <div class="form-group" style="margin-bottom:8px;">
-              <label>Project URL</label>
-              <input type="text" id="setup-url" placeholder="https://xxxxxxxxxxxx.supabase.co">
-            </div>
-            <div class="form-group">
-              <label>anon public key</label>
-              <input type="text" id="setup-key" placeholder="eyJhbGciOiJIUzI1NiIs...">
-            </div>
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;">
-          <div class="step-num">4</div>
-          <div style="flex:1;">
-            <div style="font-size:13px;font-weight:500;margin-bottom:6px;">SQL Editor → New query → τρέξε αυτό:</div>
-            <div class="code-block" id="sql-setup-code" style="font-size:11px;line-height:1.6;">-- Τρέξε αυτό στο SQL Editor του Supabase
-create table if not exists lessons (
-  id bigint primary key generated always as identity,
-  student text, date text, subject text, topic text,
-  duration int, fee numeric, payment text, type text,
-  notes text, created_at timestamptz default now()
-);
-create table if not exists schedule (
-  id bigint primary key generated always as identity,
-  student text, day int, start_time text,
-  duration int, subject text, fee numeric, type text
-);
-create table if not exists homework (
-  id bigint primary key generated always as identity,
-  type text, student text, description text,
-  priority text, deadline text, done boolean default false,
-  created_at timestamptz default now()
-);
--- RLS
-alter table lessons enable row level security;
-alter table schedule enable row level security;
-alter table homework enable row level security;
--- Policies (drop first to avoid duplicate errors)
-drop policy if exists "public_all" on lessons;
-drop policy if exists "public_all" on schedule;
-drop policy if exists "public_all" on homework;
-create policy "public_all" on lessons for all using (true) with check (true);
-create policy "public_all" on schedule for all using (true) with check (true);
-create policy "public_all" on homework for all using (true) with check (true);</div>
-            <button class="btn sm" onclick="copySQL()" style="margin-top:6px;">📋 Αντιγραφή SQL</button>
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;">
-          <div class="step-num">5</div>
-          <div style="flex:1;">
-            <button class="btn primary" onclick="connectSupabase()" style="width:100%;">Σύνδεση & Εκκίνηση →</button>
-            <div id="setup-error" style="font-size:12px;color:var(--red);margin-top:6px;"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============ MAIN APP ============ -->
-<div id="main-app" style="display:none;">
-  <div class="app">
-    <div class="topnav">
-      <div>
-        <div class="topnav-logo">Teaching Hub</div>
-        <div class="topnav-sub">Χρήστος Κεχαγιάς · Μαθηματικά</div>
-      </div>
-      <div class="topnav-right">
-        <div id="sync-dot" class="sync-dot" title="Συγχρονισμένο"></div>
-        <span id="sync-label" style="font-size:11px;color:rgba(255,255,255,.5);">sync</span>
-        <button class="btn sm" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2);" onclick="openModal('add')">+ Μάθημα</button>
-      </div>
-    </div>
-
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('overview')">Επισκόπηση</button>
-      <button class="tab" onclick="switchTab('lessons')">Μαθήματα</button>
-      <button class="tab" onclick="switchTab('students')">Μαθητές</button>
-      <button class="tab" onclick="switchTab('schedule')">Πρόγραμμα</button>
-      <button class="tab" onclick="switchTab('homework')">Εργασίες <span id="hw-dot" style="display:none;width:6px;height:6px;background:#f87171;border-radius:50%;margin-left:3px;"></span></button>
-      <button class="tab" onclick="switchTab('finance')">Οικονομικά</button>
-      <button class="tab" onclick="switchTab('latex')">LaTeX</button>
-      <button class="tab" onclick="switchTab('insights')">AI Insights</button>
-      <button class="tab" onclick="switchTab('settings')">⚙ Ρυθμίσεις</button>
-    </div>
-
-    <div class="content">
-
-      <!-- OVERVIEW -->
-      <div class="panel active" id="tab-overview">
-        <div class="metric-row">
-          <div class="metric"><div class="metric-label">Εισόδημα μήνα</div><div class="metric-value good" id="ov-income">€0</div><div class="metric-sub">τρέχων μήνας</div></div>
-          <div class="metric"><div class="metric-label">Οφειλές</div><div class="metric-value danger" id="ov-unpaid">€0</div><div class="metric-sub" id="ov-uc">—</div></div>
-          <div class="metric"><div class="metric-label">Μαθήματα εβδ.</div><div class="metric-value" id="ov-sess">0</div><div class="metric-sub" id="ov-hrs">0h</div></div>
-          <div class="metric"><div class="metric-label">Μαθητές</div><div class="metric-value" id="ov-stu">0</div><div class="metric-sub">ενεργοί</div></div>
-        </div>
-        <div id="checkin-banner"></div>
-        <div class="two-col">
-          <div class="card"><div class="section-title">Πρόσφατα μαθήματα</div><div id="recent-lessons"><div style="font-size:13px;color:#aaa;text-align:center;padding:1rem;">Δεν υπάρχουν μαθήματα.</div></div></div>
-          <div class="card"><div class="section-title">Insights</div><div id="quick-insights"></div></div>
-        </div>
-        <div class="card"><div class="section-title">Εβδομαδιαίο εισόδημα</div><div style="height:190px;"><canvas id="weeklyChart"></canvas></div></div>
-      </div>
-
-      <!-- LESSONS -->
-      <div class="panel" id="tab-lessons">
-        <div class="card" style="margin-bottom:.75rem;">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <select id="filter-stu" onchange="renderLessons()" style="width:auto;font-size:12px;padding:5px 8px;"></select>
-              <select id="filter-pay" onchange="renderLessons()" style="width:auto;font-size:12px;padding:5px 8px;">
-                <option value="">Όλες πληρωμές</option>
-                <option value="paid">Πληρωμένα</option>
-                <option value="unpaid">Ανεξόφλητα</option>
-                <option value="partial">Μερικά</option>
-              </select>
-            </div>
-            <div style="display:flex;gap:6px;">
-              <button class="btn sm" onclick="openVoice()">🎙 Φωνητική</button>
-              <div style="font-size:12px;color:#aaa;align-self:center;" id="lesson-count"></div>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="lesson-header"><span>Μαθητής</span><span>Θέμα</span><span>Διάρκ.</span><span>Αμοιβή</span><span>Πληρωμή</span><span></span></div>
-          <div id="lesson-list"></div>
-        </div>
-      </div>
-
-      <!-- STUDENTS -->
-      <div class="panel" id="tab-students">
-        <div class="card">
-          <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr;gap:8px;padding:5px 0 9px;border-bottom:1px solid var(--gray-border);font-size:10px;color:var(--gray);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">
-            <span>Μαθητής</span><span>Μάθημα</span><span>Ώρες</span><span>Οφείλει</span><span>Σημ/σεις</span>
-          </div>
-          <div id="student-list"></div>
-        </div>
-      </div>
-
-      <!-- SCHEDULE -->
-      <div class="panel" id="tab-schedule">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px;">
-          <div><div style="font-size:15px;font-weight:600;">Εβδομαδιαίο Πρόγραμμα</div><div style="font-size:12px;color:#999;margin-top:2px;">Σταθερές ώρες — καταχώρησε μια φορά</div></div>
-          <button class="btn primary" onclick="openScheduleModal()">+ Νέα ώρα</button>
-        </div>
-        <div id="schedule-view"></div>
-        <div class="card" style="background:#fffbeb;border-color:#fde68a;">
-          <div style="font-size:13px;color:#666;">📋 <strong>Έλεγχος ημέρας</strong> εμφανίζεται αυτόματα κάθε βράδυ στις 21:00 για επιβεβαίωση μαθημάτων.</div>
-          <button class="btn sm" style="margin-top:8px;" onclick="triggerCheckin()">▶ Εκκίνηση τώρα (δοκιμή)</button>
-        </div>
-      </div>
-
-      <!-- HOMEWORK -->
-      <div class="panel" id="tab-homework">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px;">
-          <div><div style="font-size:15px;font-weight:600;">Εργασίες & Φυλλάδια</div></div>
-          <button class="btn primary" onclick="openHWModal()">+ Νέα εργασία</button>
-        </div>
-        <div class="two-col">
-          <div class="card"><div class="section-title">Εργασίες μαθητών</div><div id="hw-stu-list"></div></div>
-          <div class="card"><div class="section-title">Φυλλάδια προς ετοιμασία</div><div id="hw-ws-list"></div></div>
-        </div>
-      </div>
-
-      <!-- FINANCE -->
-      <div class="panel" id="tab-finance">
-        <div class="metric-row">
-          <div class="metric"><div class="metric-label">Σύνολο εισπράξεων</div><div class="metric-value good" id="fin-total">€0</div></div>
-          <div class="metric"><div class="metric-label">Τρέχων μήνας</div><div class="metric-value" id="fin-month">€0</div></div>
-          <div class="metric"><div class="metric-label">Εκκρεμείς</div><div class="metric-value danger" id="fin-owed">€0</div></div>
-          <div class="metric"><div class="metric-label">Είσπραξη %</div><div class="metric-value" id="fin-rate">—</div></div>
-        </div>
-        <div class="two-col">
-          <div class="card"><div class="section-title">Εισόδημα ανά μήνα</div><div style="height:200px;"><canvas id="monthChart"></canvas></div></div>
-          <div class="card"><div class="section-title">Κατανομή πληρωμών</div><div style="height:200px;"><canvas id="payChart"></canvas></div></div>
-        </div>
-        <div class="card"><div class="section-title">Ανεξόφλητα</div><div id="unpaid-list"></div></div>
-      </div>
-
-      <!-- LATEX -->
-      <div class="panel" id="tab-latex">
-        <div class="two-col">
-          <div>
-            <div class="card">
-              <div class="section-title">Μεταφόρτωση αρχείου</div>
-              <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
-                <div class="upload-icon">📄</div>
-                <div style="font-size:14px;font-weight:500;margin-top:8px;">Σύρε ή κλικ για upload</div>
-                <p>PDF, Word (.docx), ή απλό κείμενο</p>
-              </div>
-              <input type="file" id="file-input" accept=".pdf,.docx,.txt,.doc" style="display:none;" onchange="handleFileUpload(event)">
-              <div id="file-status" style="font-size:12px;color:var(--gray);margin-top:8px;min-height:18px;"></div>
-            </div>
-
-            <div class="card">
-              <div class="section-title">Ρυθμίσεις μετατροπής</div>
-              <div class="form-row">
-                <div class="form-group"><label>Τύπος εγγράφου</label>
-                  <select id="latex-type">
-                    <option value="theory">Θεωρία / Σημειώσεις</option>
-                    <option value="exam">Διαγώνισμα</option>
-                    <option value="worksheet">Φυλλάδιο εξάσκησης</option>
-                    <option value="solutions">Λύσεις διαγωνίσματος</option>
-                  </select>
-                </div>
-                <div class="form-group"><label>Μάθημα</label>
-                  <select id="latex-subject"></select>
-                </div>
-              </div>
-              <div class="form-group" style="margin-bottom:10px;">
-                <label>Ή πληκτρολόγησε / επικόλλησε κείμενο</label>
-                <textarea id="latex-input" style="height:100px;" placeholder="Επικόλλησε κείμενο από Word/PDF ή περίγραψε τι θέλεις..."></textarea>
-              </div>
-              <div class="form-group" style="margin-bottom:12px;">
-                <label>Επιπλέον οδηγίες (προαιρετικό)</label>
-                <textarea id="latex-extra" style="height:50px;" placeholder="π.χ. Πρόσθεσε 3 βήματα στη λύση, χρησιμοποίησε multicol..."></textarea>
-              </div>
-              <button class="btn primary" style="width:100%;" onclick="convertToLatex()">Μετατροπή σε LaTeX →</button>
-            </div>
-          </div>
-
-          <div class="card" style="display:flex;flex-direction:column;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-              <div class="section-title" style="margin-bottom:0;">LaTeX Έξοδος</div>
-              <div style="display:flex;gap:6px;">
-                <button class="btn sm" onclick="copyLatex()">📋 Αντιγραφή</button>
-                <button class="btn sm success" onclick="downloadLatex()">⬇ .tex</button>
-              </div>
-            </div>
-            <textarea class="latex-out" id="latex-output" readonly placeholder="Ο LaTeX κώδικας θα εμφανιστεί εδώ...
-&#10;&#10;Υποστηρίζει:
-• PDF upload → εξαγωγή κειμένου → LaTeX
-• Word .docx upload → εξαγωγή κειμένου → LaTeX
-• Απλό κείμενο/copy-paste → LaTeX
-&#10;Compile στο Overleaf.com"></textarea>
-            <div id="latex-status" style="font-size:12px;color:var(--gray);margin-top:8px;min-height:18px;"></div>
-          </div>
-        </div>
-
-        <!-- Quick shortcuts -->
-        <div class="card">
-          <div class="section-title">Γρήγορες εντολές</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">
-            <button class="btn sm" onclick="setLatexPrompt('Φτιάξε φυλλάδιο εξάσκησης για τριγωνομετρικές εξισώσεις Β Λυκείου με 6 ασκήσεις κλιμακωτής δυσκολίας')">Φυλλάδιο Τριγ/τρίας</button>
-            <button class="btn sm" onclick="setLatexPrompt('Φτιάξε διαγώνισμα Άλγεβρας Β Λυκείου με Θέμα Α-Δ για δευτεροβάθμιες εξισώσεις')">Διαγώνισμα Άλγεβρας</button>
-            <button class="btn sm" onclick="setLatexPrompt('Φτιάξε σημειώσεις θεωρίας για συναρτήσεις Β Λυκείου με ορισμούς, θεωρήματα και παραδείγματα')">Σημειώσεις Συναρτήσεων</button>
-            <button class="btn sm" onclick="setLatexPrompt('Φτιάξε φυλλάδιο Θέμα Δ με τεχνικές και παγίδες για τριγωνομετρία')">Φυλλάδιο Θέμα Δ</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- AI INSIGHTS -->
-      <div class="panel" id="tab-insights">
-        <div class="card">
-          <div class="section-title">Ερώτησε τα δεδομένα σου</div>
-          <div style="display:flex;gap:8px;align-items:flex-start;">
-            <textarea id="ai-query" style="height:72px;" placeholder="π.χ. Ποιοι μαθητές δυσκολεύονται; / Ποια είναι η πιο φορτωμένη μέρα; / Ποιος δεν έχει πληρώσει;"></textarea>
-            <button class="btn primary" onclick="runAI()">→</button>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">
-            <button class="btn sm" onclick="setAIQ('Ποιοι μαθητές χρειάζονται επιπλέον υποστήριξη;')">Αδύνατοι μαθητές</button>
-            <button class="btn sm" onclick="setAIQ('Ποιος δεν έχει πληρώσει αυτό τον μήνα;')">Ανεξόφλητα</button>
-            <button class="btn sm" onclick="setAIQ('Ποια θέματα επαναλαμβάνω περισσότερο;')">Topic patterns</button>
-            <button class="btn sm" onclick="setAIQ('Πρότεινε φυλλάδιο για το πιο αδύνατο θέμα.')">Ιδέα φυλλαδίου</button>
-          </div>
-        </div>
-        <div id="ai-output"><div class="card"><div style="font-size:13px;color:#aaa;text-align:center;padding:1rem;">Κάνε μια ερώτηση παραπάνω.</div></div></div>
-        <div class="card"><div class="section-title">Αυτόματα patterns</div><div id="auto-insights"></div></div>
-      </div>
-
-      <!-- SETTINGS -->
-      <div class="panel" id="tab-settings">
-        <div style="font-size:15px;font-weight:600;margin-bottom:1.5rem;">⚙ Ρυθμίσεις</div>
-
-        <!-- Subjects -->
-        <div class="card" style="margin-bottom:1rem;">
-          <div class="section-title">Μαθήματα που διδάσκω</div>
-          <div style="font-size:12px;color:#999;margin-bottom:12px;">Αυτά εμφανίζονται στα dropdowns όλης της εφαρμογής.</div>
-          <div id="subjects-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="text" id="new-subject" placeholder="π.χ. Άλγεβρα Γ΄ Λυκείου" style="flex:1;">
-            <button class="btn primary sm" onclick="addSubject()">+ Προσθήκη</button>
-          </div>
-        </div>
-
-        <!-- Classes -->
-        <div class="card" style="margin-bottom:1rem;">
-          <div class="section-title">Τάξεις / Τμήματα</div>
-          <div style="font-size:12px;color:#999;margin-bottom:12px;">Εμφανίζονται ως επιλογές στο πεδίο τμήματος.</div>
-          <div id="classes-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="text" id="new-class" placeholder="π.χ. Β2, Γ Λυκείου, Α Γυμνασίου" style="flex:1;">
-            <button class="btn primary sm" onclick="addClass()">+ Προσθήκη</button>
-          </div>
-        </div>
-
-        <!-- Default fee -->
-        <div class="card" style="margin-bottom:1rem;">
-          <div class="section-title">Προεπιλογές</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Προεπιλεγμένη χρέωση ιδιαιτέρου (€/ώρα)</label>
-              <input type="number" id="default-fee-private" placeholder="25" min="0">
-            </div>
-            <div class="form-group">
-              <label>Προεπιλεγμένη χρέωση φροντιστηρίου (€/ώρα)</label>
-              <input type="number" id="default-fee-class" placeholder="15" min="0">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Διάρκεια ιδιαιτέρου (λεπτά)</label>
-              <input type="number" id="default-dur-private" placeholder="60" min="15">
-            </div>
-            <div class="form-group">
-              <label>Διάρκεια φροντιστηρίου (λεπτά)</label>
-              <input type="number" id="default-dur-class" placeholder="90" min="15">
-            </div>
-          </div>
-          <button class="btn primary" onclick="saveDefaults()">Αποθήκευση προεπιλογών</button>
-        </div>
-
-        <!-- AI Proxy -->
-        <div class="card" style="margin-bottom:1rem;">
-          <div class="section-title">AI Proxy URL (για Netlify)</div>
-          <div style="font-size:12px;color:#999;margin-bottom:10px;">
-            Για να λειτουργούν τα AI features (LaTeX, φωνητική, insights) από το Netlify,
-            χρειάζεσαι ένα Cloudflare Worker. Δες το αρχείο <code>cloudflare_worker.js</code> για οδηγίες (5 λεπτά setup, δωρεάν).
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="text" id="proxy-url-input" placeholder="https://teaching-proxy.YOUR-NAME.workers.dev" style="flex:1;">
-            <button class="btn primary sm" onclick="saveProxyURL()">Αποθήκευση</button>
-          </div>
-          <div id="proxy-status" style="font-size:12px;margin-top:6px;color:#999;"></div>
-        </div>
-
-        <!-- Supabase reconnect -->
-        <div class="card" style="background:#fff8f6;border-color:#fca5a5;">
-          <div class="section-title" style="color:#991b1b;">Επανασύνδεση Supabase</div>
-          <div style="font-size:13px;color:#666;margin-bottom:12px;">Αν θέλεις να αλλάξεις τα στοιχεία σύνδεσης:</div>
-          <button class="btn danger" onclick="resetSupabase()">🔄 Επαναρύθμιση Supabase</button>
-        </div>
-      </div>
-
-    </div><!-- /content -->
-  </div><!-- /app -->
-</div><!-- /main-app -->
-
-<!-- ============ MODALS ============ -->
-
-<!-- Add/Edit Lesson -->
-<div class="modal-overlay" id="modal-lesson" onclick="if(event.target===this)closeLessonModal()">
-  <div class="modal">
-    <h2 id="modal-lesson-title">Καταχώρηση μαθήματος</h2>
-    <div class="form-row">
-      <div class="form-group"><label>Μαθητής / Τμήμα</label><input type="text" id="f-student" list="stu-dl"><datalist id="stu-dl"></datalist></div>
-      <div class="form-group"><label>Ημερομηνία</label><input type="date" id="f-date"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Μάθημα</label><select id="f-subject"></select></div>
-      <div class="form-group"><label>Θέμα</label><input type="text" id="f-topic" placeholder="π.χ. Θέμα Δ — Ολοκληρώματα"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Διάρκεια (λεπτά)</label><input type="number" id="f-duration" placeholder="60"></div>
-      <div class="form-group"><label>Χρέωση (€)</label><input type="number" id="f-fee" placeholder="25" step="0.5"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Πληρωμή</label><select id="f-payment"><option value="paid">Πληρώθηκε</option><option value="unpaid">Ανεξόφλητο</option><option value="partial">Μερική</option></select></div>
-      <div class="form-group"><label>Τύπος</label><select id="f-type"><option value="private">Ιδιαίτερο</option><option value="class">Φροντιστήριο</option></select></div>
-    </div>
-    <div class="form-group" style="margin-bottom:12px;">
-      <label>Σημειώσεις / Δυσκολίες</label>
-      <div style="display:flex;gap:6px;">
-        <textarea id="f-notes" style="height:60px;" placeholder="Δυσκολίες, παρατηρήσεις..."></textarea>
-        <button class="btn mic" id="notes-mic" onclick="toggleMic('notes')" title="Φωνητική">🎙</button>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeLessonModal()">Ακύρωση</button>
-      <button class="btn primary" onclick="saveLesson()">Αποθήκευση</button>
-    </div>
-  </div>
-</div>
-
-<!-- Quick Voice -->
-<div class="modal-overlay" id="modal-voice" onclick="if(event.target===this)closeVoice()">
-  <div class="modal" style="max-width:440px;">
-    <h2>🎙 Φωνητική καταχώρηση</h2>
-    <p style="font-size:13px;color:var(--gray);margin-bottom:1rem;">Πες π.χ.: <em>"Σήμερα με την Ειρήνη, Ανάλυση, Θέμα Δ, δυσκολία στα ολοκληρώματα, εξήντα λεπτά, εικοσιπέντε ευρώ, πληρώθηκε"</em></p>
-    <div class="voice-panel">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <button class="btn mic" id="quick-mic" onclick="toggleQuickVoice()">🎙</button>
-        <div id="voice-status" style="font-size:13px;color:#aaa;">Πάτα για εγγραφή</div>
-      </div>
-      <div class="voice-transcript" id="voice-transcript">Μιλάς εδώ...</div>
-    </div>
-    <div id="voice-parsed"></div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeVoice()">Ακύρωση</button>
-      <button class="btn primary" id="voice-confirm" onclick="confirmVoice()" style="display:none;">✓ Αποθήκευση</button>
-    </div>
-  </div>
-</div>
-
-<!-- Schedule -->
-<div class="modal-overlay" id="modal-schedule" onclick="if(event.target===this)closeScheduleModal()">
-  <div class="modal">
-    <h2 id="schedule-modal-title">Προσθήκη σταθερής ώρας</h2>
-    <input type="hidden" id="sc-edit-id" value="">
-    <div class="form-row">
-      <div class="form-group"><label>Μαθητής / Τμήμα</label><input type="text" id="sc-student" list="stu-dl"><datalist id="class-dl"></datalist></div>
-      <div class="form-group"><label>Ημέρα</label><select id="sc-day"><option value="1">Δευτέρα</option><option value="2">Τρίτη</option><option value="3">Τετάρτη</option><option value="4">Πέμπτη</option><option value="5">Παρασκευή</option><option value="6">Σάββατο</option><option value="0">Κυριακή</option></select></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Ώρα</label><input type="time" id="sc-start" value="16:00"></div>
-      <div class="form-group"><label>Διάρκεια (λεπτά)</label><input type="number" id="sc-duration" value="60"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Μάθημα</label><select id="sc-subject"></select></div>
-      <div class="form-group"><label>Χρέωση (€)</label><input type="number" id="sc-fee" placeholder="25"></div>
-    </div>
-    <div class="form-group" style="margin-bottom:12px;"><label>Τύπος</label><select id="sc-type"><option value="private">Ιδιαίτερο</option><option value="class">Φροντιστήριο</option></select></div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeScheduleModal()">Ακύρωση</button>
-      <button class="btn primary" onclick="saveScheduleSlot()">Αποθήκευση</button>
-    </div>
-  </div>
-</div>
-
-<!-- HW -->
-<div class="modal-overlay" id="modal-hw" onclick="if(event.target===this)closeHWModal()">
-  <div class="modal">
-    <h2>Νέα εργασία / φυλλάδιο</h2>
-    <div class="form-row">
-      <div class="form-group"><label>Τύπος</label><select id="hw-type" onchange="toggleHWType()"><option value="student">Εργασία μαθητή</option><option value="worksheet">Φυλλάδιο προς ετοιμασία</option></select></div>
-      <div class="form-group" id="hw-stu-grp"><label>Μαθητής</label><input type="text" id="hw-student" list="stu-dl"></div>
-    </div>
-    <div class="form-group" style="margin-bottom:10px;"><label>Περιγραφή</label>
-      <div style="display:flex;gap:6px;"><textarea id="hw-desc" style="height:64px;" placeholder="Ασκήσεις, θέματα..."></textarea><button class="btn mic" onclick="toggleMic('hw')" id="hw-mic">🎙</button></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Προτεραιότητα</label><select id="hw-priority"><option value="high">Υψηλή</option><option value="med" selected>Μέτρια</option><option value="low">Χαμηλή</option></select></div>
-      <div class="form-group"><label>Προθεσμία</label><input type="date" id="hw-deadline"></div>
-    </div>
-    <div class="modal-footer"><button class="btn" onclick="closeHWModal()">Ακύρωση</button><button class="btn primary" onclick="saveHW()">Αποθήκευση</button></div>
-  </div>
-</div>
-
-<!-- End-of-day check-in -->
-<div class="modal-overlay" id="modal-checkin">
-  <div class="modal">
-    <h2>📋 Έλεγχος ημέρας</h2>
-    <p style="font-size:13px;color:var(--gray);margin-bottom:1rem;" id="checkin-date"></p>
-    <div id="checkin-items"></div>
-    <div class="modal-footer"><button class="btn primary" onclick="finalizeCheckin()">Ολοκλήρωση</button></div>
-  </div>
-</div>
 
 <script>
 // ===================== CONFIG =====================
@@ -1669,8 +1080,26 @@ function renderOverview(){
   document.getElementById('quick-insights').innerHTML=ins.length?ins.map(renderIC).join(''):'<div style="font-size:13px;color:#aaa;padding:.5rem 0;">Καταχώρησε μαθήματα.</div>';
 
   const todaySlots=getTodaySlots();
-  const ci=localStorage.getItem('ck_ci_'+new Date().toISOString().slice(0,10));
-  document.getElementById('checkin-banner').innerHTML=(todaySlots.length&&!ci)?`<div class="banner warn"><div><strong>📋 Έλεγχος ημέρας</strong> &nbsp;— ${todaySlots.length} μαθήματα σήμερα</div><button class="btn sm" onclick="triggerCheckin()">Εκκίνηση →</button></div>`:'';
+  const todayStr=new Date().toISOString().slice(0,10);
+  const ci=localStorage.getItem('ck_ci_'+todayStr);
+  // Check pending past days (last 7 days)
+  const pendingDays=[];
+  for(let i=1;i<=6;i++){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const ds=d.toISOString().slice(0,10);
+    const dayOfWeek=d.getDay();
+    const hasSlots=schedule.some(s=>s.day===dayOfWeek);
+    const done=localStorage.getItem('ck_ci_'+ds);
+    if(hasSlots&&!done) pendingDays.push({date:ds,label:d.toLocaleDateString('el-GR',{weekday:'short',day:'numeric',month:'short'})});
+  }
+  let bannerHTML='';
+  if(todaySlots.length&&!ci){
+    bannerHTML+=`<div class="banner warn" style="margin-bottom:8px;"><div><strong>📋 Σήμερα</strong> — ${todaySlots.length} μαθήματα εκκρεμούν</div><button class="btn sm" onclick="triggerCheckin()">Έλεγχος →</button></div>`;
+  }
+  if(pendingDays.length){
+    bannerHTML+=`<div class="banner info" style="margin-bottom:1rem;"><div style="flex:1;"><strong>⏳ Εκκρεμείς ημέρες:</strong> ${pendingDays.map(p=>`<button class="btn xs" style="margin:2px;" onclick="triggerCheckinForDate('${p.date}')">${p.label}</button>`).join('')}</div></div>`;
+  }
+  document.getElementById('checkin-banner').innerHTML=bannerHTML;
 }
 
 function renderIC(i){
@@ -1710,22 +1139,39 @@ function renderLessons(){
 }
 
 // ===================== STUDENTS =====================
+function removeManualStudent(name){
+  const manual=JSON.parse(localStorage.getItem('ck_manual_students')||'[]').filter(n=>n!==name);
+  localStorage.setItem('ck_manual_students',JSON.stringify(manual));
+  renderStudents(); updateStudentDatalist();
+}
+function openAddStudentModal(){
+  const name=prompt('Όνομα νέου μαθητή / τμήματος:'); if(!name||!name.trim())return;
+  const manual=JSON.parse(localStorage.getItem('ck_manual_students')||'[]');
+  if(!manual.includes(name.trim())) manual.push(name.trim());
+  localStorage.setItem('ck_manual_students',JSON.stringify(manual));
+  renderStudents(); updateStudentDatalist();
+}
 function renderStudents(){
+  const manual=JSON.parse(localStorage.getItem('ck_manual_students')||'[]');
   const map={};
+  // Add manual students first (may have no lessons yet)
+  manual.forEach(n=>{if(!map[n])map[n]={mins:0,owed:0,notes:0,subs:new Set(),manual:true};});
   lessons.forEach(l=>{if(!map[l.student])map[l.student]={mins:0,owed:0,notes:0,subs:new Set()};map[l.student].mins+=(l.duration||0);if(l.payment==='unpaid')map[l.student].owed+=Number(l.fee||0);if(l.notes)map[l.student].notes++;map[l.student].subs.add(l.subject||'');});
   const rows=Object.entries(map);
   document.getElementById('student-list').innerHTML=rows.length?rows.map(([n,d])=>`
-    <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule-2);font-size:13px;">
-      <div style="font-weight:600;">${n}</div>
-      <div style="font-size:12px;color:var(--ink-3);">${[...d.subs].join(', ')}</div>
+    <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr 36px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule-2);font-size:13px;">
+      <div style="font-weight:600;">${n}${d.manual&&d.mins===0?'<span style="font-family:var(--mono);font-size:9px;color:var(--ink-3);margin-left:5px;">manual</span>':''}</div>
+      <div style="font-size:12px;color:var(--ink-3);">${[...d.subs].filter(Boolean).join(', ')||'—'}</div>
       <div style="font-family:var(--mono);font-size:12px;">${(d.mins/60).toFixed(1)}h</div>
       <div>${d.owed>0?'<span class="badge unpaid">€'+d.owed.toFixed(0)+'</span>':'<span style="color:var(--ink-3);font-size:12px;">—</span>'}</div>
       <div>${d.notes>0?'<span class="badge neutral">'+d.notes+' σημ.</span>':'<span style="color:var(--ink-3);font-size:12px;">—</span>'}</div>
+      <div>${d.manual&&d.mins===0?`<button class="btn xs danger" onclick="removeManualStudent('${n.replace(/'/g,"\\'")}')">🗑</button>`:''}</div>
     </div>`).join(''):'<div style="font-size:13px;color:var(--ink-3);text-align:center;padding:1.5rem;">Δεν υπάρχουν μαθητές.</div>';
 }
 
 function updateStudentDatalist(){
-  const students=[...new Set([...lessons.map(l=>l.student),...schedule.map(s=>s.student)].filter(Boolean))];
+  const manual=JSON.parse(localStorage.getItem('ck_manual_students')||'[]');
+  const students=[...new Set([...manual,...lessons.map(l=>l.student),...schedule.map(s=>s.student)].filter(Boolean))];
   document.querySelectorAll('#stu-dl').forEach(dl=>{dl.innerHTML=students.map(s=>`<option value="${s}">`).join('');});
   const sel=document.getElementById('filter-stu'); if(sel){const cur=sel.value;sel.innerHTML='<option value="">Όλοι μαθητές</option>'+[...new Set(lessons.map(l=>l.student))].map(s=>`<option${s===cur?' selected':''}>${s}</option>`).join('');}
 }
@@ -1844,10 +1290,26 @@ function renderSchedule(){
 function getTodaySlots(){const d=new Date().getDay();return schedule.filter(s=>s.day===d).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));}
 
 // ===================== CHECK-IN =====================
-function triggerCheckin(){
-  const slots=getTodaySlots(); if(!slots.length){alert('Δεν υπάρχουν μαθήματα σήμερα.');return;}
-  document.getElementById('checkin-date').textContent=new Date().toLocaleDateString('el-GR',{weekday:'long',day:'numeric',month:'long'});
+function triggerCheckinForDate(dateStr){
+  const d=new Date(dateStr); const dayOfWeek=d.getDay();
+  const slots=schedule.filter(s=>s.day===dayOfWeek).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));
+  if(!slots.length){alert('Δεν βρέθηκαν μαθήματα για αυτή την ημέρα.');return;}
+  window._checkinDate=dateStr;
+  document.getElementById('checkin-date').textContent=d.toLocaleDateString('el-GR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   window._ciSlots=slots; window._ciStates=slots.map(()=>({done:false}));
+  _buildCheckinItems(slots);
+  document.getElementById('modal-checkin').classList.add('open');
+}
+function triggerCheckin(){
+  const today=new Date(); const slots=getTodaySlots();
+  if(!slots.length){alert('Δεν υπάρχουν μαθήματα σήμερα.');return;}
+  window._checkinDate=today.toISOString().slice(0,10);
+  document.getElementById('checkin-date').textContent=today.toLocaleDateString('el-GR',{weekday:'long',day:'numeric',month:'long'});
+  window._ciSlots=slots; window._ciStates=slots.map(()=>({done:false}));
+  _buildCheckinItems(slots);
+  document.getElementById('modal-checkin').classList.add('open');
+}
+function _buildCheckinItems(slots){
   document.getElementById('checkin-items').innerHTML=slots.map((s,i)=>`
     <div style="border:1px solid var(--rule);border-radius:var(--r-md);padding:12px;margin-bottom:8px;cursor:pointer;transition:background .12s;" id="ci-${i}" onclick="toggleCI(${i})">
       <div style="display:flex;align-items:center;gap:12px;">
@@ -1863,7 +1325,7 @@ function triggerCheckin(){
 }
 function toggleCI(i){const s=window._ciStates[i];s.done=!s.done;const cb=document.getElementById(`ci-cb-${i}`),card=document.getElementById(`ci-${i}`),notes=document.getElementById(`ci-notes-${i}`);cb.style.background=s.done?'#166534':'';cb.style.borderColor=s.done?'#166534':'#ddd';cb.style.color='#fff';cb.textContent=s.done?'✓':'';card.style.background=s.done?'#f0f8ea':'';notes.style.display=s.done?'block':'none';}
 async function finalizeCheckin(){
-  const today=new Date().toISOString().slice(0,10);
+  const today=window._checkinDate||new Date().toISOString().slice(0,10);
   const slots=window._ciSlots||[], states=window._ciStates||[];
   for(let i=0;i<slots.length;i++){
     if(!states[i].done)continue;
@@ -1965,7 +1427,86 @@ function renderAutoInsights(){
 
 // ===================== VOICE (LESSON) =====================
 let qRecog=null, qTranscript='', parsedVoice=null;
-function openVoice(){document.getElementById('modal-voice').classList.add('open');document.getElementById('voice-transcript').textContent='Μιλάς εδώ...';document.getElementById('voice-parsed').innerHTML='';document.getElementById('voice-confirm').style.display='none';qTranscript='';}
+let voiceMethod = localStorage.getItem('ck_voice_method')||'browser';
+let groqRecorder=null, groqChunks=[];
+
+// ── Groq helpers ──
+function saveGroqKey(){
+  const k=(document.getElementById('groq-key-input').value||'').trim();
+  if(!k){localStorage.removeItem('ck_groq_key');document.getElementById('groq-key-status').textContent='Αφαιρέθηκε.';return;}
+  localStorage.setItem('ck_groq_key',k);
+  document.getElementById('groq-key-status').innerHTML='<span style="color:var(--green)">✓ Αποθηκεύτηκε</span>';
+}
+
+function setVoiceMethod(m){
+  voiceMethod=m; localStorage.setItem('ck_voice_method',m);
+  document.getElementById('vm-browser').style.background=m==='browser'?'var(--ink)':'';
+  document.getElementById('vm-browser').style.color=m==='browser'?'#fff':'';
+  document.getElementById('vm-groq').style.background=m==='groq'?'var(--ink)':'';
+  document.getElementById('vm-groq').style.color=m==='groq'?'#fff':'';
+  document.getElementById('voice-box-browser').style.display=m==='browser'?'block':'none';
+  document.getElementById('voice-box-groq').style.display=m==='groq'?'block':'none';
+  const hasKey=!!localStorage.getItem('ck_groq_key');
+  document.getElementById('vm-status').textContent=m==='groq'&&!hasKey?'⚠ Χρειάζεται Groq API key (Ρυθμίσεις)':'';
+}
+
+async function transcribeGroq(event){
+  const file=event.target.files[0]; if(!file)return;
+  const key=localStorage.getItem('ck_groq_key');
+  if(!key){alert('Πρόσθεσε Groq API key στις Ρυθμίσεις.');return;}
+  document.getElementById('voice-transcript-groq').textContent='⏳ Μεταγραφή...';
+  const fd=new FormData(); fd.append('file',file,file.name); fd.append('model','whisper-large-v3'); fd.append('language','el'); fd.append('response_format','text');
+  try{
+    const r=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd});
+    const text=await r.text();
+    qTranscript=text.trim();
+    document.getElementById('voice-transcript-groq').textContent=qTranscript;
+    if(qTranscript) parseVoiceAI(qTranscript);
+  }catch(e){document.getElementById('voice-transcript-groq').textContent='Σφάλμα: '+e.message;}
+}
+
+async function toggleGroqRecording(){
+  const btn=document.getElementById('groq-rec-btn');
+  const st=document.getElementById('groq-rec-status');
+  const key=localStorage.getItem('ck_groq_key');
+  if(!key){alert('Πρόσθεσε Groq API key στις Ρυθμίσεις.');return;}
+  if(groqRecorder&&groqRecorder.state==='recording'){
+    groqRecorder.stop(); btn.classList.remove('recording'); btn.textContent='🎙'; st.textContent='Επεξεργασία...'; return;
+  }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    groqChunks=[]; groqRecorder=new MediaRecorder(stream);
+    groqRecorder.ondataavailable=e=>groqChunks.push(e.data);
+    groqRecorder.onstop=async()=>{
+      const blob=new Blob(groqChunks,{type:'audio/webm'});
+      const fd=new FormData(); fd.append('file',blob,'recording.webm'); fd.append('model','whisper-large-v3'); fd.append('language','el'); fd.append('response_format','text');
+      const r=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+key},body:fd});
+      const text=await r.text();
+      qTranscript=text.trim();
+      document.getElementById('voice-transcript-groq').textContent=qTranscript;
+      st.textContent='Ολοκληρώθηκε.';
+      if(qTranscript) parseVoiceAI(qTranscript);
+      stream.getTracks().forEach(t=>t.stop());
+    };
+    groqRecorder.start(); btn.classList.add('recording'); btn.textContent='⏹';
+    st.textContent='Μιλάς... (πάτα ⏹ για να σταματήσεις)';
+  }catch(e){st.textContent='Σφάλμα μικροφώνου: '+e.message;}
+}
+
+function openVoice(){
+  document.getElementById('modal-voice').classList.add('open');
+  document.getElementById('voice-transcript').textContent='Μιλάς εδώ...';
+  if(document.getElementById('voice-transcript-groq')) document.getElementById('voice-transcript-groq').textContent='Το κείμενο θα εμφανιστεί εδώ...';
+  document.getElementById('voice-parsed').innerHTML='';
+  document.getElementById('voice-confirm').style.display='none';
+  qTranscript='';
+  // Init method UI
+  setVoiceMethod(voiceMethod);
+  // Load groq key status
+  const gk=localStorage.getItem('ck_groq_key');
+  const gks=document.getElementById('groq-key-status');
+  if(gks&&gk) gks.innerHTML='<span style="color:var(--green)">✓ Key αποθηκευμένο</span>';
+}
 function closeVoice(){document.getElementById('modal-voice').classList.remove('open');if(qRecog){qRecog.stop();qRecog=null;}resetMic('quick-mic');}
 function resetMic(id){const b=document.getElementById(id);if(b){b.classList.remove('recording');b.textContent='🎙';}}
 
@@ -2167,6 +1708,14 @@ function renderSettings(){
       <span class="remove" onclick="removeClass('${c.replace(/'/g,"\\'")}')" >×</span>
     </span></span>`).join('');
 
+  // Groq key
+  const gkInput=document.getElementById('groq-key-input');
+  if(gkInput){ const gk=localStorage.getItem('ck_groq_key'); gkInput.value=gk?'•'.repeat(20):''; }
+  const gkSt=document.getElementById('groq-key-status');
+  if(gkSt&&localStorage.getItem('ck_groq_key')) gkSt.innerHTML='<span style="color:var(--green)">✓ Key αποθηκευμένο</span>';
+  // Proxy URL
+  const pInput=document.getElementById('proxy-url-input');
+  if(pInput){ const pu=localStorage.getItem('ck_proxy_url'); pInput.value=pu||''; }
   const fp=document.getElementById('default-fee-private'); if(fp) fp.value=defs.feePrivate;
   const fc=document.getElementById('default-fee-class');   if(fc) fc.value=defs.feeClass;
   const dp=document.getElementById('default-dur-private'); if(dp) dp.value=defs.durPrivate;
