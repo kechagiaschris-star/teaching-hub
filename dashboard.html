@@ -1043,37 +1043,27 @@ async function loadAll() {
 
 async function insertLesson(d) {
   setSyncing('sync');
-  const {data,error} = await sb.from('lessons').insert(d).select();
+  const q = sb.from('lessons');
+  const {data,error} = await q.insert(d);
   setSyncing(error?'error':'ok');
-  if(!error && data){ lessons.unshift(data[0]); }
-  return !error;
+  if(error){ console.error('insertLesson error:', JSON.stringify(error)); return false; }
+  if(data && data[0]) lessons.unshift(data[0]);
+  return true;
 }
 async function updateLesson(id,d) { setSyncing('sync'); const {error}=await sb.from('lessons').update(d).eq('id',id); if(!error){const i=lessons.findIndex(l=>l.id===id);if(i>-1)lessons[i]={...lessons[i],...d};setSyncing('ok');renderAll();} else setSyncing('error'); }
 async function deleteLesson(id) { if(!confirm('Διαγραφή;'))return; setSyncing('sync'); await sb.from('lessons').delete().eq('id',id); lessons=lessons.filter(l=>l.id!==id); setSyncing('ok'); renderAll(); }
 async function insertSchedule(d) {
   setSyncing('sync');
-  console.log('insertSchedule — payload:', JSON.stringify(d));
-  const {data,error} = await sb.from('schedule').insert(d).select();
-  console.log('insertSchedule — response:', {data, error});
+  const {data,error} = await sb.from('schedule').insert(d);
   setSyncing(error?'error':'ok');
-  if(error){
-    console.error('Supabase error:', error.message, error.details, error.hint);
-    alert('Supabase error: ' + error.message + (error.hint ? '\nHint: '+error.hint : ''));
-    return false;
-  }
-  if(data) schedule.push(data[0]);
+  if(error){ console.error('insertSchedule error:', JSON.stringify(error)); alert('Σφάλμα αποθήκευσης: '+JSON.stringify(error)); return false; }
+  if(data && data[0]) schedule.push(data[0]);
   return true;
 }
 async function deleteSchedule(id) { if(!confirm('Διαγραφή ώρας;'))return; await sb.from('schedule').delete().eq('id',id); schedule=schedule.filter(s=>s.id!==id); renderSchedule(); }
 async function insertHW(d) {
-  console.log('insertHW payload:', JSON.stringify(d));
-  const {data,error} = await sb.from('homework').insert(d).select();
-  console.log('insertHW result:', {data, error});
-  if(error){
-    console.error('insertHW error:', error.message, error.details, error.hint);
-    alert('Σφάλμα εργασίας: ' + error.message + (error.hint?'\n'+error.hint:''));
-    return false;
-  }
+  const {data,error} = await sb.from('homework').insert(d);
+  if(error){ console.error('insertHW error:', JSON.stringify(error)); return false; }
   if(data && data[0]) homework.unshift(data[0]);
   return true;
 }
@@ -1101,7 +1091,7 @@ function switchTab(t){
 }
 
 // ===================== RENDER ALL =====================
-function renderAll(){ renderOverview(); renderLessons(); renderStudents(); renderAutoInsights(); renderWeeklyChart(); updateFinMetrics(); renderUnpaid(); updateStudentDatalist(); updateHWDot(); }
+async function renderAll(){ renderOverview(); renderLessons(); renderStudents(); renderAutoInsights(); renderWeeklyChart(); updateFinMetrics(); renderUnpaid(); updateStudentDatalist(); updateHWDot(); }
 
 // ===================== OVERVIEW =====================
 function renderOverview(){
@@ -1143,7 +1133,7 @@ function renderOverview(){
   for(let i=1;i<=6;i++){
     const d=new Date(); d.setDate(d.getDate()-i);
     const ds=d.toISOString().slice(0,10);
-    const dayOfWeek=d.getDay();
+    const dayOfWeek=d.getDay(); // local date, getDay() is correct here
     const hasSlots=schedule.some(s=>s.day===dayOfWeek);
     const done=localStorage.getItem('ck_ci_'+ds);
     if(hasSlots&&!done) pendingDays.push({date:ds,label:d.toLocaleDateString('el-GR',{weekday:'short',day:'numeric',month:'short'})});
@@ -1349,7 +1339,10 @@ function getTodaySlots(){const d=new Date().getDay();return schedule.filter(s=>s
 
 // ===================== CHECK-IN =====================
 function triggerCheckinForDate(dateStr){
-  const d=new Date(dateStr); const dayOfWeek=d.getDay();
+  // Parse date parts directly to avoid UTC/local timezone issue
+  const [yr,mo,dy] = dateStr.split('-').map(Number);
+  const d = new Date(yr, mo-1, dy);
+  const dayOfWeek=d.getDay();
   const slots=schedule.filter(s=>s.day===dayOfWeek).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));
   if(!slots.length){alert('Δεν βρέθηκαν μαθήματα για αυτή την ημέρα.');return;}
   window._checkinDate=dateStr;
@@ -1383,19 +1376,33 @@ function _buildCheckinItems(slots){
 }
 function toggleCI(i){const s=window._ciStates[i];s.done=!s.done;const cb=document.getElementById(`ci-cb-${i}`),card=document.getElementById(`ci-${i}`),notes=document.getElementById(`ci-notes-${i}`);cb.style.background=s.done?'#166534':'';cb.style.borderColor=s.done?'#166534':'#ddd';cb.style.color='#fff';cb.textContent=s.done?'✓':'';card.style.background=s.done?'#f0f8ea':'';notes.style.display=s.done?'block':'none';}
 async function finalizeCheckin(){
-  const today=window._checkinDate||new Date().toISOString().slice(0,10);
-  const slots=window._ciSlots||[], states=window._ciStates||[];
-  for(let i=0;i<slots.length;i++){
-    if(!states[i].done)continue;
-    const s=slots[i], notes=(document.getElementById(`ci-text-${i}`)?.value||'').trim();
-    await insertLesson({student:s.student,date:today,subject:s.subject,topic:'',duration:s.duration,fee:s.fee,payment:'unpaid',type:s.type,notes});
-    if(document.getElementById(`ci-hw-${i}`)?.checked&&notes) await insertHW({type:'student',student:s.student,description:'Εργασία: '+notes.slice(0,80),priority:'med',deadline:null,done:false});
-    if(document.getElementById(`ci-ws-${i}`)?.checked&&notes) await insertHW({type:'worksheet',student:s.student,description:'Φυλλάδιο για '+s.student+': '+notes.slice(0,80),priority:'high',deadline:null,done:false});
+  const btn = document.querySelector('#modal-checkin .btn.primary');
+  if(btn){ btn.disabled=true; btn.textContent='Αποθήκευση...'; }
+  try {
+    const today=window._checkinDate||new Date().toISOString().slice(0,10);
+    const slots=window._ciSlots||[], states=window._ciStates||[];
+    let saved=0;
+    for(let i=0;i<slots.length;i++){
+      if(!states[i].done) continue;
+      const s=slots[i];
+      const notes=(document.getElementById('ci-text-'+i)?.value||'').trim();
+      const ok = await insertLesson({student:s.student,date:today,subject:s.subject,topic:'',duration:s.duration||60,fee:s.fee||0,payment:'unpaid',type:s.type||'private',notes:notes});
+      if(ok) saved++;
+      const hwCheck = document.getElementById('ci-hw-'+i);
+      const wsCheck = document.getElementById('ci-ws-'+i);
+      if(hwCheck?.checked && notes) await insertHW({type:'student',student:s.student,description:'Εργασία: '+notes.slice(0,80),priority:'med',deadline:null,done:false});
+      if(wsCheck?.checked && notes) await insertHW({type:'worksheet',student:s.student,description:'Φυλλάδιο για '+s.student+': '+notes.slice(0,80),priority:'high',deadline:null,done:false});
+    }
+    localStorage.setItem('ck_ci_'+today,'done');
+    document.getElementById('modal-checkin').classList.remove('open');
+    renderAll();
+    alert('✓ Αποθηκεύτηκαν '+saved+' μαθήματα!');
+  } catch(e) {
+    console.error('finalizeCheckin error:', e);
+    alert('Σφάλμα: '+e.message);
+  } finally {
+    if(btn){ btn.disabled=false; btn.textContent='Ολοκλήρωση'; }
   }
-  localStorage.setItem('ck_ci_'+today,'done');
-  document.getElementById('modal-checkin').classList.remove('open');
-  await renderAll();
-  alert('✓ Έλεγχος αποθηκεύτηκε!');
 }
 
 // ===================== HOMEWORK =====================
