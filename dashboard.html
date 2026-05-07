@@ -909,62 +909,57 @@ function createSupabaseClient(url, key) {
     'Prefer': 'return=representation'
   };
 
+  async function request(method, table, body, params) {
+    let u = baseUrl + '/rest/v1/' + table;
+    if (params) u += '?' + params;
+    const opts = { method, headers: hdrs };
+    if (body !== null) opts.body = JSON.stringify(body);
+    const r = await fetch(u, opts);
+    let d;
+    try { d = await r.json(); } catch(e) { d = null; }
+    if (!r.ok) return { data: null, error: d || { message: 'HTTP ' + r.status } };
+    return { data: d, error: null };
+  }
+
   function makeQuery(table) {
     const filters = [];
-    const orders = [];   // support multiple .order() chains
+    const orders = [];
     let selectCols = '*', limitN = null;
 
-    function buildUrl(extra) {
-      let u = `${baseUrl}/rest/v1/${table}?select=${selectCols}`;
-      if (orders.length) u += `&order=${orders.join(',')}`;
-      if (limitN) u += `&limit=${limitN}`;
-      filters.forEach(f => u += '&' + f);
-      if (extra) u += extra;
-      return u;
+    function buildParams(extra) {
+      const parts = ['select=' + selectCols];
+      if (orders.length) parts.push('order=' + orders.join(','));
+      if (limitN) parts.push('limit=' + limitN);
+      filters.forEach(f => parts.push(f));
+      if (extra) parts.push(extra);
+      return parts.join('&');
     }
 
     const q = {
-      select(cols)    { selectCols = cols || '*'; return q; },
-      order(col, o)   { orders.push(col + '.' + (o?.ascending === false ? 'desc' : 'asc')); return q; },
-      limit(n)        { limitN = n; return q; },
-      eq(col, val)    { filters.push(col + '=eq.' + encodeURIComponent(val)); return q; },
+      select(cols)   { selectCols = cols || '*'; return q; },
+      order(col, o)  { orders.push(col + '.' + ((o && o.ascending === false) ? 'desc' : 'asc')); return q; },
+      limit(n)       { limitN = n; return q; },
+      eq(col, val)   { filters.push(col + '=eq.' + encodeURIComponent(val)); return q; },
 
+      // Explicit async fetch — use this in loadAll instead of awaiting q directly
+      async fetch()  { return request('GET', table, null, buildParams()); },
+
+      // Make q itself awaitable via Promise
       then(res, rej) {
-        let u;
-        try { u = buildUrl(); } catch(e) { rej(e); return; }
-        fetch(u, { headers: hdrs })
-          .then(r => r.json().then(d => r.ok
-            ? res({ data: d, error: null })
-            : res({ data: null, error: d })))
-          .catch(rej);
+        request('GET', table, null, buildParams()).then(res).catch(rej);
       },
 
       async insert(rows) {
         const body = Array.isArray(rows) ? rows : [rows];
-        // ?select=* makes PostgREST return the inserted rows with generated id
-        const r = await fetch(`${baseUrl}/rest/v1/${table}?select=*`, {
-          method: 'POST',
-          headers: hdrs,
-          body: JSON.stringify(body)
-        });
-        const d = await r.json();
-        if (!r.ok) return { data: null, error: d };
-        return { data: Array.isArray(d) ? d : [d], error: null };
+        return request('POST', table, body, 'select=*');
       },
 
       async update(obj) {
-        const u = buildUrl();
-        const r = await fetch(u, {
-          method: 'PATCH',
-          headers: { ...hdrs, Prefer: 'return=representation' },
-          body: JSON.stringify(obj)
-        });
-        const d = await r.json();
-        return r.ok ? { data: d, error: null } : { data: null, error: d };
+        return request('PATCH', table, obj, buildParams());
       },
 
       async delete() {
-        const u = buildUrl();
+        const u = baseUrl + '/rest/v1/' + table + '?' + buildParams();
         const r = await fetch(u, { method: 'DELETE', headers: hdrs });
         if (!r.ok) { const e = await r.json().catch(()=>({})); return { error: e }; }
         return { error: null };
@@ -1032,13 +1027,13 @@ async function loadAll() {
   setSyncing('sync');
   try {
     const [l,s,h] = await Promise.all([
-      sb.from('lessons').select('*').order('date',{ascending:false}),
-      sb.from('schedule').select('*').order('day').order('start_time'),
-      sb.from('homework').select('*').order('created_at',{ascending:false})
+      sb.from('lessons').select('*').order('date',{ascending:false}).fetch(),
+      sb.from('schedule').select('*').order('day').order('start_time').fetch(),
+      sb.from('homework').select('*').order('created_at',{ascending:false}).fetch()
     ]);
     lessons = l.data||[]; schedule = s.data||[]; homework = h.data||[];
     setSyncing('ok'); renderAll();
-  } catch(e) { setSyncing('error'); }
+  } catch(e) { setSyncing('error'); console.error('loadAll error:', e); }
 }
 
 async function insertLesson(d) {
@@ -1346,8 +1341,9 @@ function triggerCheckinForDate(dateStr){
   const slots=schedule.filter(s=>s.day===dayOfWeek).sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));
   if(!slots.length){alert('Δεν βρέθηκαν μαθήματα για αυτή την ημέρα.');return;}
   window._checkinDate=dateStr;
-  document.getElementById('checkin-date').textContent=d.toLocaleDateString('el-GR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('checkin-date').textContent=d.toLocaleDateString('el-GR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' ('+slots.length+' μαθήματα)';
   window._ciSlots=slots; window._ciStates=slots.map(()=>({done:false}));
+  console.log('Past checkin slots:', dateStr, slots.map(s=>s.student+'/'+s.subject));
   _buildCheckinItems(slots);
   document.getElementById('modal-checkin').classList.add('open');
 }
@@ -1355,8 +1351,9 @@ function triggerCheckin(){
   const today=new Date(); const slots=getTodaySlots();
   if(!slots.length){alert('Δεν υπάρχουν μαθήματα σήμερα.');return;}
   window._checkinDate=today.toISOString().slice(0,10);
-  document.getElementById('checkin-date').textContent=today.toLocaleDateString('el-GR',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('checkin-date').textContent=today.toLocaleDateString('el-GR',{weekday:'long',day:'numeric',month:'long'})+' ('+slots.length+' μαθήματα)';
   window._ciSlots=slots; window._ciStates=slots.map(()=>({done:false}));
+  console.log('Checkin slots:', slots.map(s=>s.student+'/'+s.subject));
   _buildCheckinItems(slots);
   document.getElementById('modal-checkin').classList.add('open');
 }
