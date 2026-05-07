@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Teaching Hub — Χρήστος Κεχαγιάς</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ── TOKENS ── */
 :root {
@@ -26,9 +27,9 @@
   --blue-bg:   #eef3fb;
   --red:       #9b1c1c;
   --red-bg:    #fef2f2;
-  --sans:      'Geist', 'DM Sans', system-ui, sans-serif;
-  --serif:     'Playfair Display', Georgia, serif;
-  --mono:      'Geist Mono', 'JetBrains Mono', monospace;
+  --sans:      'Inter', system-ui, sans-serif;
+  --serif:     'Lora', Georgia, serif;
+  --mono:      'JetBrains Mono', monospace;
   --r-sm:      6px;
   --r-md:      10px;
   --r-lg:      14px;
@@ -38,8 +39,8 @@
 
 /* ── RESET ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 15px; -webkit-font-smoothing: antialiased; }
-body { font-family: var(--sans); background: var(--surface); color: var(--ink); min-height: 100vh; line-height: 1.5; }
+html { font-size: 15px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { font-family: var(--sans); background: var(--surface); color: var(--ink); min-height: 100vh; line-height: 1.55; font-feature-settings: 'kern' 1, 'liga' 1; }
 
 /* ── TOPNAV ── */
 .topnav {
@@ -322,9 +323,10 @@ textarea { resize: vertical; }
 .hw-desc { font-size: 13px; font-weight: 500; flex: 1; }
 .hw-desc.done { text-decoration: line-through; color: var(--ink-3); }
 .hw-meta { font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-top: 2px; }
-.priority-high { color: var(--accent); }
-.priority-med  { color: var(--amber);  }
-.priority-low  { color: var(--green);  }
+.hw-priority { display:inline-flex;align-items:center;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:600;font-family:var(--mono);letter-spacing:.04em; }
+.hw-priority.high { background:#fde8e8;color:#9b1c1c;border:1px solid #fca5a5; }
+.hw-priority.med  { background:#fef3c7;color:#78350f;border:1px solid #fcd34d; }
+.hw-priority.low  { background:#dcfce7;color:#14532d;border:1px solid #86efac; }
 
 /* ── MODALS ── */
 .overlay {
@@ -568,8 +570,6 @@ create policy "public_all" on homework for all using (true) with check (true);</
 
   <div class="tabbar">
     <button class="tabbar-btn active" onclick="switchTab('overview')">Επισκόπηση</button>
-    <button class="tabbar-btn" onclick="switchTab('lessons')">Μαθήματα</button>
-    <button class="tabbar-btn" onclick="switchTab('students')">Μαθητές</button>
     <button class="tabbar-btn" onclick="switchTab('schedule')">Πρόγραμμα</button>
     <button class="tabbar-btn" onclick="switchTab('homework')">Εργασίες <span class="notif" id="hw-dot" style="display:none;"></span></button>
     <button class="tabbar-btn" onclick="switchTab('finance')">Οικονομικά</button>
@@ -591,8 +591,11 @@ create policy "public_all" on homework for all using (true) with check (true);</
       <div id="checkin-banner"></div>
       <div class="two-col">
         <div class="card">
-          <div class="card-title">Πρόσφατα μαθήματα</div>
-          <div id="recent-lessons"><div class="empty"><span class="empty-icon">📚</span><span class="empty-text">Κανένα μάθημα ακόμα</span></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+            <div class="card-title" style="margin-bottom:0;">Πρόσφατα μαθήματα</div>
+            <button class="btn xs" onclick="openModal('add')">+ Νέο</button>
+          </div>
+          <div id="recent-lessons"><div class="empty" style="padding:1rem;opacity:.4;"><span class="empty-icon">📚</span><span class="empty-text">Κανένα μάθημα</span></div></div>
         </div>
         <div class="card">
           <div class="card-title">Insights</div>
@@ -602,46 +605,6 @@ create policy "public_all" on homework for all using (true) with check (true);</
       <div class="card">
         <div class="card-title">Εβδομαδιαίο εισόδημα</div>
         <div class="chart-wrap"><canvas id="weeklyChart"></canvas></div>
-      </div>
-    </div>
-
-    <!-- LESSONS -->
-    <div class="panel" id="tab-lessons">
-      <div class="filter-bar">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <select id="filter-stu" onchange="renderLessons()" style="width:auto;font-size:12px;padding:5px 9px;"></select>
-          <select id="filter-pay" onchange="renderLessons()" style="width:auto;font-size:12px;padding:5px 9px;">
-            <option value="">Όλες πληρωμές</option>
-            <option value="paid">Πληρωμένα</option>
-            <option value="unpaid">Ανεξόφλητα</option>
-            <option value="partial">Μερικά</option>
-          </select>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button class="btn sm" onclick="openVoice()">🎙 Φωνητική</button>
-          <span id="lesson-count" style="font-family:var(--mono);font-size:11px;color:var(--ink-3);"></span>
-        </div>
-      </div>
-      <div class="card">
-        <div class="table-header"><span>Μαθητής</span><span>Θέμα</span><span>Διάρκ.</span><span>Αμοιβή</span><span>Πληρωμή</span><span></span></div>
-        <div id="lesson-list"></div>
-      </div>
-    </div>
-
-    <!-- STUDENTS -->
-    <div class="panel" id="tab-students">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;">
-        <div>
-          <div style="font-family:var(--serif);font-size:20px;font-style:italic;">Μαθητές</div>
-          <div style="font-size:12px;color:var(--ink-3);margin-top:3px;">Αυτόματα από καταχωρημένα μαθήματα — ή πρόσθεσε χειροκίνητα</div>
-        </div>
-        <button class="btn primary" onclick="openAddStudentModal()">+ Νέος μαθητής</button>
-      </div>
-      <div class="card">
-        <div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr;gap:8px;padding:0 0 9px;border-bottom:1.5px solid var(--rule);font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);">
-          <span>Μαθητής</span><span>Μάθημα</span><span>Ώρες</span><span>Οφείλει</span><span>Σημ.</span>
-        </div>
-        <div id="student-list"></div>
       </div>
     </div>
 
@@ -907,7 +870,7 @@ create policy "public_all" on homework for all using (true) with check (true);</
     <div class="form-row"><div class="field"><label>Τύπος</label><select id="hw-type" onchange="toggleHWType()"><option value="student">Εργασία μαθητή</option><option value="worksheet">Φυλλάδιο προς ετοιμασία</option></select></div><div class="field" id="hw-stu-grp"><label>Μαθητής</label><input type="text" id="hw-student" list="stu-dl"></div></div>
     <div class="field" style="margin-bottom:10px;"><label>Περιγραφή</label><div style="display:flex;gap:6px;"><textarea id="hw-desc" style="height:64px;" placeholder="Ασκήσεις, θέματα..."></textarea><button class="btn mic" onclick="toggleMic('hw')" id="hw-mic">🎙</button></div></div>
     <div class="form-row"><div class="field"><label>Προτεραιότητα</label><select id="hw-priority"><option value="high">Υψηλή 🔴</option><option value="med" selected>Μέτρια 🟡</option><option value="low">Χαμηλή 🟢</option></select></div><div class="field"><label>Προθεσμία</label><input type="date" id="hw-deadline"></div></div>
-    <div class="modal-footer"><button class="btn" onclick="closeHWModal()">Ακύρωση</button><button class="btn primary" onclick="saveHW()">Αποθήκευση</button></div>
+    <div class="modal-footer"><button class="btn" onclick="closeHWModal()">Ακύρωση</button><button class="btn primary" id="hw-save-btn" onclick="saveHW()">Αποθήκευση</button></div>
   </div>
 </div>
 
@@ -948,33 +911,41 @@ function createSupabaseClient(url, key) {
 
   function makeQuery(table) {
     const filters = [];
-    let selectCols = '*', orderStr = null, limitN = null;
+    const orders = [];   // support multiple .order() chains
+    let selectCols = '*', limitN = null;
 
-    async function buildUrl() {
+    function buildUrl(extra) {
       let u = `${baseUrl}/rest/v1/${table}?select=${selectCols}`;
-      if (orderStr) u += `&order=${orderStr}`;
-      if (limitN)   u += `&limit=${limitN}`;
+      if (orders.length) u += `&order=${orders.join(',')}`;
+      if (limitN) u += `&limit=${limitN}`;
       filters.forEach(f => u += '&' + f);
+      if (extra) u += extra;
       return u;
     }
 
     const q = {
-      select(c)      { selectCols = c || '*'; return q; },
-      order(c, o)    { orderStr = c + '.' + (o?.ascending === false ? 'desc' : 'asc'); return q; },
-      limit(n)       { limitN = n; return q; },
-      eq(col, val)   { filters.push(col + '=eq.' + encodeURIComponent(val)); return q; },
+      select(cols)    { selectCols = cols || '*'; return q; },
+      order(col, o)   { orders.push(col + '.' + (o?.ascending === false ? 'desc' : 'asc')); return q; },
+      limit(n)        { limitN = n; return q; },
+      eq(col, val)    { filters.push(col + '=eq.' + encodeURIComponent(val)); return q; },
 
       then(res, rej) {
-        buildUrl().then(u =>
-          fetch(u, { headers: hdrs })
-            .then(r => r.json().then(d => r.ok ? res({ data: d, error: null }) : res({ data: null, error: d })))
-        ).catch(rej);
+        let u;
+        try { u = buildUrl(); } catch(e) { rej(e); return; }
+        fetch(u, { headers: hdrs })
+          .then(r => r.json().then(d => r.ok
+            ? res({ data: d, error: null })
+            : res({ data: null, error: d })))
+          .catch(rej);
       },
 
       async insert(rows) {
         const body = Array.isArray(rows) ? rows : [rows];
-        const r = await fetch(`${baseUrl}/rest/v1/${table}`, {
-          method: 'POST', headers: hdrs, body: JSON.stringify(body)
+        // ?select=* makes PostgREST return the inserted rows with generated id
+        const r = await fetch(`${baseUrl}/rest/v1/${table}?select=*`, {
+          method: 'POST',
+          headers: hdrs,
+          body: JSON.stringify(body)
         });
         const d = await r.json();
         if (!r.ok) return { data: null, error: d };
@@ -982,7 +953,7 @@ function createSupabaseClient(url, key) {
       },
 
       async update(obj) {
-        const u = await buildUrl();
+        const u = buildUrl();
         const r = await fetch(u, {
           method: 'PATCH',
           headers: { ...hdrs, Prefer: 'return=representation' },
@@ -993,9 +964,9 @@ function createSupabaseClient(url, key) {
       },
 
       async delete() {
-        const u = await buildUrl();
+        const u = buildUrl();
         const r = await fetch(u, { method: 'DELETE', headers: hdrs });
-        if (!r.ok) { const e = await r.json(); return { error: e }; }
+        if (!r.ok) { const e = await r.json().catch(()=>({})); return { error: e }; }
         return { error: null };
       }
     };
@@ -1107,12 +1078,18 @@ async function insertHW(d) {
   return true;
 }
 async function toggleHWDone(id) { const h=homework.find(x=>x.id===id); if(!h)return; const v=!h.done; await sb.from('homework').update({done:v}).eq('id',id); h.done=v; renderHomework(); updateHWDot(); }
+async function updateHW(id, data){
+  setSyncing('sync');
+  const {error} = await sb.from('homework').update(data).eq('id',id);
+  setSyncing(error?'error':'ok');
+  return !error;
+}
 async function deleteHW(id) { await sb.from('homework').delete().eq('id',id); homework=homework.filter(h=>h.id!==id); renderHomework(); updateHWDot(); }
 async function markPaid(id) { await updateLesson(id,{payment:'paid'}); }
 
 // ===================== TABS =====================
 function switchTab(t){
-  const ids=['overview','lessons','students','schedule','homework','finance','latex','insights','settings'];
+  const ids=['overview','schedule','homework','finance','latex','insights','settings'];
   document.querySelectorAll('.tabbar-btn').forEach((el,i)=>el.classList.toggle('active',ids[i]===t));
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
@@ -1141,11 +1118,19 @@ function renderOverview(){
   document.getElementById('ov-hrs').textContent=wkH.toFixed(1)+'h εβδ.';
   document.getElementById('ov-stu').textContent=allStu;
 
-  document.getElementById('recent-lessons').innerHTML=lessons.slice(0,5).map(l=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0eeea;font-size:13px;">
-      <div><div style="font-weight:500;">${l.student}</div><div style="font-size:11px;color:#999;">${l.subject||''}${l.topic?' · '+l.topic.slice(0,22):''}</div></div>
-      <div style="text-align:right;"><div style="font-size:11px;color:#999;">${l.date}</div><span class="badge ${l.payment}">${l.payment==='paid'?'Πλ/θηκε':l.payment==='partial'?'Μερική':'Οφείλει'}</span></div>
-    </div>`).join('')||'<div style="font-size:13px;color:#aaa;text-align:center;padding:1rem;">Δεν υπάρχουν μαθήματα.</div>';
+  document.getElementById('recent-lessons').innerHTML=lessons.slice(0,8).map(l=>`
+    <div class="recent-item">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:500;">${l.student}</div>
+        <div style="font-family:var(--mono);font-size:10.5px;color:var(--ink-3);">${l.date} · ${l.subject||''}${l.topic?' · '+l.topic.slice(0,18):''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+        <span class="badge ${l.payment}">${l.payment==='paid'?'Πλ/θηκε':l.payment==='partial'?'Μερική':'Οφείλει'}</span>
+        ${l.payment==='unpaid'?`<button class="btn xs" style="background:var(--green-bg);color:var(--green);border-color:#a7f3d0;padding:2px 7px;" onclick="markPaid(${l.id})">€✓</button>`:''}
+        <button class="btn xs" onclick="openModal('edit',${l.id})">✏️</button>
+        <button class="btn xs danger" onclick="deleteLesson(${l.id})">🗑</button>
+      </div>
+    </div>`).join('')||'<div class="empty" style="padding:1rem;opacity:.4;"><span class="empty-icon">📚</span><span class="empty-text">Κανένα μάθημα</span></div>';
 
   const ins=getQuickInsights();
   document.getElementById('quick-insights').innerHTML=ins.length?ins.map(renderIC).join(''):'<div style="font-size:13px;color:#aaa;padding:.5rem 0;">Καταχώρησε μαθήματα.</div>';
@@ -1166,9 +1151,11 @@ function renderOverview(){
   let bannerHTML='';
   if(todaySlots.length&&!ci){
     bannerHTML+=`<div class="banner warn" style="margin-bottom:8px;"><div><strong>📋 Σήμερα</strong> — ${todaySlots.length} μαθήματα εκκρεμούν</div><button class="btn sm" onclick="triggerCheckin()">Έλεγχος →</button></div>`;
+  } else if(todaySlots.length&&ci){
+    bannerHTML+=`<div class="banner success" style="margin-bottom:8px;"><div><strong>✓ Ο έλεγχος σήμερα ολοκληρώθηκε</strong></div><button class="btn xs" onclick="undoCheckin('${todayStr}')" style="background:rgba(0,0,0,.08);">↩ Αναίρεση</button></div>`;
   }
   if(pendingDays.length){
-    bannerHTML+=`<div class="banner info" style="margin-bottom:1rem;"><div style="flex:1;"><strong>⏳ Εκκρεμείς ημέρες:</strong> ${pendingDays.map(p=>`<button class="btn xs" style="margin:2px;" onclick="triggerCheckinForDate('${p.date}')">${p.label}</button>`).join('')}</div></div>`;
+    bannerHTML+=`<div class="banner info" style="margin-bottom:1rem;align-items:flex-start;"><div style="flex:1;"><strong>⏳ Εκκρεμείς ημέρες:</strong><div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">${pendingDays.map(p=>`<button class="btn xs" style="margin:2px;" onclick="triggerCheckinForDate('${p.date}')">${p.label}</button>`).join('')}</div></div></div>`;
   }
   document.getElementById('checkin-banner').innerHTML=bannerHTML;
 }
@@ -1407,43 +1394,91 @@ async function finalizeCheckin(){
   }
   localStorage.setItem('ck_ci_'+today,'done');
   document.getElementById('modal-checkin').classList.remove('open');
-  renderAll();
-  alert('Έλεγχος ολοκληρώθηκε!');
+  await renderAll();
+  alert('✓ Έλεγχος αποθηκεύτηκε!');
 }
 
 // ===================== HOMEWORK =====================
-function openHWModal(){updateStudentDatalist();document.getElementById('modal-hw').classList.add('open');}
+function openHWModal(){
+  editingHWId=null;
+  updateStudentDatalist();
+  ['hw-desc','hw-student','hw-deadline'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('hw-type').value='student';
+  document.getElementById('hw-priority').value='med';
+  toggleHWType();
+  const btn=document.getElementById('hw-save-btn'); if(btn) btn.textContent='Αποθήκευση';
+  document.getElementById('modal-hw').classList.add('open');
+}
 function closeHWModal(){document.getElementById('modal-hw').classList.remove('open');}
 function toggleHWType(){document.getElementById('hw-stu-grp').style.display=document.getElementById('hw-type').value==='worksheet'?'none':'block';}
+let editingHWId = null;
+
+function openEditHW(id){
+  const h = homework.find(x=>x.id===id); if(!h) return;
+  editingHWId = id;
+  document.getElementById('hw-type').value = h.type||'student';
+  toggleHWType();
+  document.getElementById('hw-student').value = h.student||'';
+  document.getElementById('hw-desc').value = h.description||'';
+  document.getElementById('hw-priority').value = h.priority||'med';
+  document.getElementById('hw-deadline').value = h.deadline||'';
+  const btn=document.getElementById('hw-save-btn'); if(btn) btn.textContent='Ενημέρωση';
+  document.getElementById('modal-hw').classList.add('open');
+}
+
 async function saveHW(){
   const desc=document.getElementById('hw-desc').value.trim();
   if(!desc){alert('Συμπλήρωσε περιγραφή.');return;}
-  const deadline=document.getElementById('hw-deadline').value.trim()||null;
-  const ok=await insertHW({
+  const data={
     type:document.getElementById('hw-type').value,
     student:document.getElementById('hw-student').value.trim()||null,
     description:desc,
     priority:document.getElementById('hw-priority').value,
-    deadline:deadline,
+    deadline:document.getElementById('hw-deadline').value||null,
     done:false
-  });
-  if(ok){
-    closeHWModal();
-    document.getElementById('hw-desc').value='';
-    document.getElementById('hw-student').value='';
-    document.getElementById('hw-deadline').value='';
-    renderHomework();
-    updateHWDot();
+  };
+  if(editingHWId){
+    const ok=await updateHW(editingHWId, data);
+    if(ok){ const h=homework.find(x=>x.id===editingHWId); if(h) Object.assign(h,data); }
+    editingHWId=null;
+  } else {
+    await insertHW(data);
   }
+  closeHWModal();
+  ['hw-desc','hw-student','hw-deadline'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const btn=document.getElementById('hw-save-btn'); if(btn) btn.textContent='Αποθήκευση';
+  renderHomework(); updateHWDot();
 }
 function updateHWDot(){const n=homework.filter(h=>!h.done).length;const d=document.getElementById('hw-dot');if(d)d.style.display=n>0?'inline-block':'none';}
+function hwSortKey(h){
+  const done = h.done ? 1 : 0;
+  const dl = h.deadline || '9999-12-31';
+  const pri = h.priority==='high' ? 0 : h.priority==='med' ? 1 : 2;
+  return `${done}|${dl}|${pri}`;
+}
 function renderHomework(){
   updateHWDot();
-  const pl={high:'🔴',med:'🟡',low:'🟢'};
-  const stuHW=homework.filter(h=>h.type==='student'), wsHW=homework.filter(h=>h.type==='worksheet');
-  const render=list=>list.length?list.map(h=>`<div class="hw-item"><div class="hw-check ${h.done?'done':''}" onclick="toggleHWDone(${h.id})">${h.done?'✓':''}</div><div style="flex:1;"><div style="font-weight:500;${h.done?'text-decoration:line-through;color:var(--ink-3)':''}">${h.student?h.student+' · ':''}${h.description||''}</div><div style="font-size:11px;color:#aaa;">${pl[h.priority]||''} ${h.deadline?'· Ως '+h.deadline:''}</div></div><button class="btn sm danger" onclick="deleteHW(${h.id})">🗑</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink-3);">Κανένα.</div>';
-  document.getElementById('hw-stu-list').innerHTML=render(stuHW);
-  document.getElementById('hw-ws-list').innerHTML=render(wsHW);
+  const priLabel={high:'Υψηλή',med:'Μέτρια',low:'Χαμηλή'};
+  const sorted = [...homework].sort((a,b)=>hwSortKey(a).localeCompare(hwSortKey(b)));
+  const stuHW = sorted.filter(h=>h.type==='student');
+  const wsHW  = sorted.filter(h=>h.type==='worksheet');
+  const renderItem = h => `
+    <div class="hw-item" id="hwi-${h.id}">
+      <div class="hw-check ${h.done?'done':''}" onclick="toggleHWDone(${h.id})">${h.done?'✓':''}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="hw-desc ${h.done?'done':''}" style="margin-bottom:4px;">${h.student?`<strong>${h.student}</strong> · `:''}${h.description||''}</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <span class="hw-priority ${h.priority}">${priLabel[h.priority]||h.priority}</span>
+          ${h.deadline?`<span style="font-family:var(--mono);font-size:10px;color:var(--ink-3);">📅 ${h.deadline}</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:3px;flex-shrink:0;">
+        <button class="btn xs" onclick="openEditHW(${h.id})" title="Επεξεργασία">✏️</button>
+        <button class="btn xs danger" onclick="deleteHW(${h.id})">🗑</button>
+      </div>
+    </div>`;
+  document.getElementById('hw-stu-list').innerHTML = stuHW.length ? stuHW.map(renderItem).join('') : '<div style="font-size:13px;color:var(--ink-3);padding:.5rem 0;">Καμία εργασία.</div>';
+  document.getElementById('hw-ws-list').innerHTML  = wsHW.length  ? wsHW.map(renderItem).join('')  : '<div style="font-size:13px;color:var(--ink-3);padding:.5rem 0;">Κανένα φυλλάδιο.</div>';
 }
 
 // ===================== FINANCE =====================
@@ -1838,6 +1873,13 @@ async function aiFetch(body){
     throw new Error(err?.error?.message || 'HTTP ' + r.status);
   }
   return r.json();
+}
+
+function undoCheckin(dateStr){
+  if(!confirm('Να αναιρεθεί ο έλεγχος της '+dateStr+'; Τα μαθήματα που καταχωρήθηκαν ΔΕΝ διαγράφονται αυτόματα.'))return;
+  localStorage.removeItem('ck_ci_'+dateStr);
+  renderOverview();
+  alert('Αναιρέθηκε. Μπορείς να ξανακάνεις τον έλεγχο από το banner.');
 }
 
 function resetSupabase(){
